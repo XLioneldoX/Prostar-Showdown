@@ -75,7 +75,7 @@ function checkStatusBlock(pokemon, logFn) {
             if (pokemon.sleepTurns === undefined) {
                 const min = sd.turnsMin || 1;
                 const max = sd.turnsMax || 3;
-                pokemon.sleepTurns = min + Math.floor(Math.random() * (max - min + 1));
+                pokemon.sleepTurns = min + Math.floor(BattleRNG.random() * (max - min + 1));
             }
             pokemon.sleepTurns--;
             if (pokemon.sleepTurns <= 0) {
@@ -90,7 +90,7 @@ function checkStatusBlock(pokemon, logFn) {
 
         case 'freeze': {
             const thawChance = sd.thawChance || 20;
-            if (Math.random() * 100 < thawChance) {
+            if (BattleRNG.random() * 100 < thawChance) {
                 pokemon.status = null;
                 logFn(`🧊 ${pokemon.name} ${sd.thawMsg || 'se descongeló!'}`, 'boost');
                 return true; // se descongeló, puede actuar
@@ -101,7 +101,7 @@ function checkStatusBlock(pokemon, logFn) {
 
         case 'paralysis': {
             const blockChance = sd.blockChance || 25;
-            if (Math.random() * 100 < blockChance) {
+            if (BattleRNG.random() * 100 < blockChance) {
                 logFn(`⚡ ${(sd.blockMsg || '{pokemon} está paralizado.').replace('{pokemon}', pokemon.name)}`, '');
                 return false;
             }
@@ -196,7 +196,7 @@ function executeAttack(attacker, defender, moveName, side, callback) {
     if (!bruteForce && move.effect?.startsWith('apply_') && !defender.fainted) {
         const sk = move.effect.replace('apply_', '');
         const chance = move.effectChance || 0;
-        if (!defender.status && !isImmuneToStatus(defender, sk) && Math.random() * 100 < chance) {
+        if (!defender.status && !isImmuneToStatus(defender, sk) && BattleRNG.random() * 100 < chance) {
             defender.status = sk;
             const sd = StatusDB[sk];
             addLog(sd?.applyMsg?.replace('{pokemon}', defender.name) || `${defender.name} fue afectado`, 'boost');
@@ -259,7 +259,7 @@ function handleStatusMove(user, target, moveName) {
     }
     if (move.effect?.startsWith('apply_')) {
         const sk = move.effect.replace('apply_', '');
-        if (move.accuracy !== null && Math.random() * 100 > (move.accuracy || 100)) {
+        if (move.accuracy !== null && BattleRNG.random() * 100 > (move.accuracy || 100)) {
             addLog(`✗ ${moveName} falló`, ''); return;
         }
         if (target.status) { addLog(`${target.name} ya tiene un estado`, ''); return; }

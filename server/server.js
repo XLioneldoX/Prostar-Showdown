@@ -230,6 +230,10 @@ wss.on('connection', (ws) => {
             case 'cancel_action': {
                 const room = rooms.get(ws._roomCode);
                 if (!room || room.state !== 'battle') break;
+
+                // Si el cliente está intentando cancelar un turno anterior al actual del servidor
+                if (msg.turn && msg.turn !== room.turnCount) break;
+
                 const idx = ws._playerIdx;
 
                 // Si el otro ya eligió y el turno se resolvió, no podemos cancelar

@@ -94,6 +94,7 @@ const MP = (() => {
 
         handlers.onTurnResolve = function (msg) {
             window._mpTurnSeed = msg.turnSeed;
+            if (typeof window.BattleRNG !== 'undefined') window.BattleRNG.setSeed(msg.turnSeed);
             moveChosen = false;
             hideWaitingBanner();
             hideOpponentChoseIndicator();
@@ -381,7 +382,8 @@ const MP = (() => {
         if (!isMultiplayer || !moveChosen) return;
         moveChosen = false;
         hideWaitingBanner();
-        send('cancel_action', {});
+        // Send the current turnCount to prevent cancelling past turns due to race conditions
+        send('cancel_action', { turn: typeof turnCount !== 'undefined' ? turnCount : 1 });
     }
 
     function forcedSwitch(idx) { send('forced_switch', { switchTo: idx }); }
