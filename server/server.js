@@ -102,13 +102,15 @@ wss.on('connection', (ws) => {
                     players: [ws, null],
                     teams: [null, null],
                     userNames: [msg.userName || 'Jugador 1', null],
-                    userAvatars: [msg.userAvatar || '👦', null],
+                    userAvatars: [msg.userAvatar || '🎮', null],
                     state: 'waiting',
                     moves: [null, null],
                     switches: [null, null],
                     activeIdx: [0, 0],
                     turnCount: 1,
                     disconnectTimers: [null, null],
+                    // Semilla PvP: garantiza que la partida es única y sincronizada
+                    matchSeed: msg.matchSeed || (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)),
                 };
                 rooms.set(code, room);
                 ws._roomCode = code;
@@ -189,6 +191,7 @@ wss.on('connection', (ws) => {
                             opponentAvatar: room.userAvatars[opponent(i)],
                             myIdx: i,
                             turnCount: 1,
+                            matchSeed: room.matchSeed,  // ← semilla única de la partida
                         });
                     });
                     console.log(`[${room.code}] Batalla iniciada`);
@@ -205,7 +208,6 @@ wss.on('connection', (ws) => {
                 const idx = ws._playerIdx;
                 room.moves[idx] = { type: 'move', moveName: msg.moveName, switchTo: null };
 
-                // Avisar al rival que el jugador ya eligió (sin decirle qué)
                 send(room.players[opponent(idx)], 'opponent_chose', {});
                 tryResolveTurn(room);
                 break;
