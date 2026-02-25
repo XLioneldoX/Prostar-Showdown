@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Kanto Showdown — Instalar Sprites</title>
+    <!-- fuente offline: usa monospace del sistema -->
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Courier New',Courier,monospace; background:#0a0a1a; color:white;
+               display:flex; align-items:center; justify-content:center;
+               min-height:100vh; padding:2rem; }
+        .box { background:#0f172a; border:2px solid #fbbf24; border-radius:10px;
+               padding:2rem; max-width:560px; width:100%; }
+        h1  { color:#fbbf24; font-size:11px; margin-bottom:1rem; text-align:center; }
+        p   { font-size:7px; color:#94a3b8; line-height:2.2; margin-bottom:1rem; }
+        .progress-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; font-size:6px; }
+        .dot { width:8px; height:8px; border-radius:50%; background:#334155; flex-shrink:0; }
+        .dot.ok     { background:#22c55e; }
+        .dot.fail   { background:#ef4444; }
+        .dot.loading{ background:#fbbf24; animation:pulse .8s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+        .bar-bg { height:6px; background:#1e293b; border-radius:3px; margin:12px 0; overflow:hidden; }
+        .bar-fill { height:100%; background:linear-gradient(90deg,#f59e0b,#22c55e); border-radius:3px; transition:width .3s; width:0%; }
+        button { width:100%; padding:10px; background:linear-gradient(135deg,#f59e0b,#ef4444);
+                 border:none; border-radius:5px; color:#1a1a2e;
+                 font-family:'Courier New',Courier,monospace; font-size:9px;
+                 cursor:pointer; margin-top:1rem; }
+        button:disabled { opacity:.4; cursor:not-allowed; }
+        #output { font-size:5.5px; color:#475569; margin-top:1rem;
+                  max-height:180px; overflow-y:auto; line-height:2; }
+        .success-box { background:rgba(34,197,94,.1); border:1px solid #22c55e;
+                       border-radius:5px; padding:1rem; margin-top:1rem;
+                       font-size:7px; color:#22c55e; line-height:2; display:none; }
+        a.btn { display:block; text-align:center; padding:10px;
+                background:linear-gradient(135deg,#22c55e,#16a34a); border-radius:5px;
+                color:white; text-decoration:none; font-size:8px; margin-top:8px; }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h1>⬇️ INSTALAR SPRITES</h1>
+    <p>
+        Este instalador descarga los sprites oficiales de los 20 Pokémon y los embebe
+        directamente en <code style="color:#7dd3fc">data/sprites.js</code>.<br>
+        Después el juego funcionará <b style="color:#fbbf24">sin internet</b> en cualquier PC.
+    </p>
+
+    <div id="lista"></div>
+    <div class="bar-bg"><div class="bar-fill" id="barFill"></div></div>
+    <div id="statusText" style="font-size:6px;color:#64748b;text-align:center;margin-bottom:8px;">
+        Pulsa el botón para empezar
+    </div>
+
+    <button id="btnStart" onclick="startDownload()">⬇️ DESCARGAR E INSTALAR</button>
+
+    <div id="output"></div>
+    <div class="success-box" id="successBox">
+        ✅ ¡Sprites instalados!<br>
+        Copia el archivo <code style="color:#7dd3fc">data/sprites.js</code> que se descargó
+        a la carpeta <code>data/</code> de tu proyecto.<br>
+        La próxima vez que abras el juego los sprites cargarán sin internet.
+        <a class="btn" href="team-builder.html">▶ IR AL CONSTRUCTOR</a>
+    </div>
+</div>
+
+<script src="data/sprites.js"></script>
+<script src="data/pokemon.js"></script>
+<script>
+// IDs de Pokémon + nombres para mostrar
+const POKEMON_IDS = [3,6,9,25,26,59,65,68,94,103,112,121,130,131,135,136,143,144,145,149];
+
+const BASE_FRONT = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+const BASE_BACK  = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${id}.png`;
+
+const newSprites = typeof SpriteB64 !== 'undefined' ? {...SpriteB64} : {};
+let done = 0;
+const total = POKEMON_IDS.length * 2;
+
+function log(msg) {
+    const el = document.getElementById('output');
+    el.innerHTML += msg + '<br>';
+    el.scrollTop = el.scrollHeight;
+}
+
+function initList() {
+    const lista = document.getElementById('lista');
+    lista.innerHTML = POKEMON_IDS.map(id => {
+        const name = PokemonDB[id]?.name || `#${id}`;
+        return `<div class="progress-row">
+            <div class="dot" id="dot-${id}-front"></div>
+            <span style="color:#64748b;width:130px">${name} (front)</span>
+            <div class="dot" id="dot-${id}-back"></div>
+            <span style="color:#64748b">back</span>
+        </div>`;
+    }).join('');
+}
+
+async function fetchSprite(id, side) {
+    const url = side === 'front' ? BASE_FRONT(id) : BASE_BACK(id);
+    const key = `official_${id}_${side}.png`;
+    const dot = document.getElementById(`dot-${id}-${side}`);
+    dot.className = 'dot loading';
+    try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const blob   = await resp.blob();
+        const b64    = await blobToBase64(blob);
+        newSprites[key] = b64;
+        dot.className = 'dot ok';
+        log(`✓ ${id} ${side}`);
+        return true;
+    } catch(e) {
+        dot.className = 'dot fail';
+        log(`✗ ${id} ${side}: ${e.message}`);
+        return false;
+    }
+}
+
+function blobToBase64(blob) {
+    return new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result);
+        r.onerror = rej;
+        r.readAsDataURL(blob);
+    });
+}
+
+function updateBar() {
+    done++;
+    const pct = Math.round((done / total) * 100);
+    document.getElementById('barFill').style.width = pct + '%';
+    document.getElementById('statusText').textContent = `${done}/${total} sprites (${pct}%)`;
+}
+
+async function startDownload() {
+    document.getElementById('btnStart').disabled = true;
+    document.getElementById('btnStart').textContent = '⏳ DESCARGANDO...';
+
+    for (const id of POKEMON_IDS) {
+        await fetchSprite(id, 'front'); updateBar();
+        await fetchSprite(id, 'back');  updateBar();
+    }
+
+    // También asegurar sprites personalizados ya en SpriteB64
+    log('✓ Sprites personalizados ya embebidos');
+
+    // Generar el archivo sprites.js actualizado
+    const content = generateSpritesJs(newSprites);
+    downloadFile('sprites.js', content);
+
+    document.getElementById('successBox').style.display = 'block';
+    document.getElementById('btnStart').textContent = '✅ COMPLETADO';
+}
+
+function generateSpritesJs(sprites) {
+    const lines = [
+`// ╔══════════════════════════════════════════════════════════════════════════╗`,
+`// ║  data/sprites.js  —  SPRITES EMBEBIDOS EN BASE64 (sin internet)         ║`,
+`// ║  Generado por instalar-sprites.html                                     ║`,
+`// ║                                                                          ║`,
+`// ║  Para añadir un sprite personalizado nuevo:                              ║`,
+`// ║   1. Convierte tu imagen: https://www.base64-image.de/                  ║`,
+`// ║   2. Añade la entrada en SpriteB64 con el nombre del archivo            ║`,
+`// ║   3. Referéncialo en CustomSprites en data/pokemon.js                   ║`,
+`// ╚══════════════════════════════════════════════════════════════════════════╝`,
+``,
+`const SpriteB64 = {`,
+    ];
+    for (const [key, val] of Object.entries(sprites)) {
+        lines.push(`    "${key}": "${val}",`);
+    }
+    lines.push(`};`);
+    return lines.join('\n');
+}
+
+function downloadFile(filename, content) {
+    const blob = new Blob([content], { type: 'text/javascript' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+initList();
+</script>
+</body>
+</html>

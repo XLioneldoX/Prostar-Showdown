@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Kanto Showdown — Calculadora de Daño</title>
+    <!-- fuente offline: usa monospace del sistema -->
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        :root{
+            --theme-bg:#0a0a1a;
+            --theme-bg-darker:#060612;
+            --theme-panel:#0f172a;
+            --theme-border:#1e293b;
+            --theme-border-light:#334155;
+            --theme-gold:#fbbf24;
+            --theme-accent-dark:#1e1b4b;
+            --theme-input:#111827;
+            --theme-text-muted:#475569;
+            --theme-text-light:#cbd5e1;
+            --bg:var(--theme-bg);
+            --panel:var(--theme-panel);
+            --border:var(--theme-border);
+            --gold:var(--theme-gold);
+            --red:#ef4444;
+            --green:#22c55e;
+        }
+        body{font-family:'Courier New',Courier,monospace;background:var(--theme-bg);color:white;min-height:100vh;font-size:13px;}
+        body::after{content:'';position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.015) 2px,rgba(0,0,0,.015) 4px);z-index:9999;}
+        ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-thumb{background:var(--theme-border);border-radius:2px;}
+
+        /* HEADER */
+        .header{background:linear-gradient(90deg,var(--theme-panel),var(--theme-accent-dark),var(--theme-panel));border-bottom:2px solid var(--gold);padding:.75rem 1.5rem;display:flex;align-items:center;justify-content:space-between;height:52px;}
+        .header-title{font-size:11px;color:var(--gold);text-shadow:0 0 20px rgba(251,191,36,.5);}
+        .nav-btn{padding:.4rem .8rem;background:transparent;border:1px solid var(--border);color:#64748b;font-family:'Courier New',Courier,monospace;font-size:7px;cursor:pointer;border-radius:4px;text-decoration:none;transition:all .15s;}
+        .nav-btn:hover{border-color:var(--gold);color:var(--gold);}
+
+        /* LAYOUT */
+        .layout{display:grid;grid-template-columns:1fr 1fr;gap:0;height:calc(100vh - 52px);}
+        .side{display:flex;flex-direction:column;overflow:hidden;}
+        .side-player{border-right:2px solid var(--border);}
+        .side-title{padding:10px 14px;font-size:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+        .side-title.player-title{color:var(--green);background:rgba(34,197,94,.05);}
+        .side-title.enemy-title{color:#f87171;background:rgba(239,68,68,.05);}
+
+        /* SELECTOR DE POKÉMON */
+        .poke-selector{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+        .poke-select-list{flex:1;overflow-y:auto;max-height:80px;display:flex;flex-wrap:wrap;gap:4px;}
+        .poke-chip{padding:3px 7px;background:var(--theme-input);border:1px solid var(--border);border-radius:12px;cursor:pointer;font-size:5.5px;color:#94a3b8;transition:all .12s;}
+        .poke-chip:hover{border-color:var(--gold);color:var(--gold);}
+        .poke-chip.active{border-color:var(--gold);background:#1c1a0e;color:var(--gold);}
+
+        /* TARJETA DE POKÉMON */
+        .poke-card{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start;}
+        .poke-sprite{width:72px;height:72px;image-rendering:pixelated;object-fit:contain;flex-shrink:0;}
+        .poke-info{flex:1;}
+        .poke-name{font-size:13px;margin-bottom:4px;}
+        .poke-types{display:flex;gap:4px;margin-bottom:4px;}
+        .type-badge{font-size:5px;padding:1px 5px;border-radius:2px;}
+        .type-FUEGO,.type-FIRE{background:#dc2626;} .type-AGUA,.type-WATER{background:#2563eb;} .type-PLANTA{background:#16a34a;}
+        .type-ELECTRICO,.type-ELÉCTRICO{background:#ca8a04;color:#1a1a2e;} .type-FANTASMA{background:#7e22ce;} .type-TIERRA{background:#92400e;}
+        .type-NORMAL{background:#6b7280;} .type-PSÍQUICO,.type-PSIQUICO{background:#db2777;} .type-LUCHA{background:#c2410c;}
+        .type-VOLADOR{background:#4f46e5;} .type-VENENO{background:#7c3aed;} .type-HIELO{background:#0891b2;}
+        .type-ROCA{background:#a16207;} .type-DRAGÓN,.type-DRAGON{background:#4338ca;} .type-SINIESTRO{background:#1f2937;border:1px solid #374151;}
+        .type-ACERO{background:#64748b;} .type-BICHO{background:#4d7c0f;} .type-HADA{background:#f472b6;color:#1a1a2e;}
+
+        /* CONFIGURACIÓN */
+        .config-section{padding:8px 14px;border-bottom:1px solid var(--border);}
+        .config-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:6px;}
+        .config-label{color:#64748b;min-width:52px;}
+        .config-select{background:var(--theme-input);border:1px solid var(--border);color:white;font-family:'Courier New',Courier,monospace;font-size:5.5px;padding:3px 5px;border-radius:3px;flex:1;}
+        .config-input{background:var(--theme-input);border:1px solid var(--border);color:white;font-family:'Courier New',Courier,monospace;font-size:5.5px;padding:3px 5px;border-radius:3px;width:55px;text-align:center;}
+        .stat-mini-row{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;font-size:5.5px;}
+        .stat-mini-cell{text-align:center;background:var(--theme-input);border:1px solid var(--border);border-radius:3px;padding:3px 2px;}
+        .stat-mini-cell b{display:block;font-size:8px;margin-top:2px;}
+
+        /* MOVIMIENTOS */
+        .moves-section{flex:1;overflow-y:auto;padding:8px 14px;}
+        .move-result{background:var(--theme-panel);border:2px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:6px;cursor:default;transition:border-color .15s;}
+        .move-result:hover{border-color:var(--theme-border-light);}
+        .mr-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+        .mr-name{font-size:7.5px;}
+        .mr-meta{font-size:5.5px;color:#64748b;display:flex;gap:6px;}
+        .mr-dmg{text-align:right;}
+        .mr-dmg-range{font-size:9px;font-weight:bold;}
+        .mr-dmg-pct{font-size:5.5px;color:#64748b;margin-top:1px;}
+        .mr-bar-bg{height:4px;background:var(--theme-border);border-radius:2px;margin-top:4px;overflow:hidden;}
+        .mr-bar-fill{height:100%;border-radius:2px;transition:width .3s;}
+        .mr-eff-badge{font-size:5.5px;padding:1px 6px;border-radius:10px;border:1px solid;}
+        .eff-super{color:#22c55e;border-color:#22c55e;background:rgba(34,197,94,.1);}
+        .eff-hyper{color:#fbbf24;border-color:#fbbf24;background:rgba(251,191,36,.1);}
+        .eff-weak{color:#ef4444;border-color:#ef4444;background:rgba(239,68,68,.1);}
+        .eff-none{color:#475569;border-color:#475569;background:rgba(71,85,105,.1);}
+        .eff-neutral{color:#64748b;border-color:#64748b;}
+        .mr-ko{color:#ef4444;font-size:7px;font-weight:bold;}
+        .mr-ohko{background:rgba(239,68,68,.15);border-color:#ef4444!important;}
+        .mr-status{font-size:5.5px;color:#a78bfa;margin-top:3px;}
+
+        /* SECCIÓN CENTRAL */
+        .center-bar{grid-column:1/-1;height:42px;background:#060612;border-bottom:2px solid var(--border);display:flex;align-items:center;justify-content:center;gap:12px;flex-shrink:0;}
+        .calc-btn{padding:6px 14px;background:linear-gradient(135deg,#f59e0b,#ef4444);border:none;border-radius:4px;color:#1a1a2e;font-family:'Courier New',Courier,monospace;font-size:7px;cursor:pointer;transition:all .15s;}
+        .calc-btn:hover{filter:brightness(1.1);}
+        .level-badge{font-size:6px;color:#64748b;display:flex;align-items:center;gap:5px;}
+        .level-input{background:var(--theme-input);border:1px solid var(--border);color:var(--gold);font-family:'Courier New',Courier,monospace;font-size:6px;padding:3px 6px;border-radius:3px;width:50px;text-align:center;}
+
+        /* COMPARATIVA */
+        .comparison{display:none;grid-column:1/-1;padding:10px 16px;background:#060612;border-top:2px solid var(--border);font-size:7px;}
+        .comparison.visible{display:block;}
+        .cmp-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;text-align:center;}
+        .cmp-verdict{font-size:8px;padding:6px 12px;border-radius:4px;}
+        .cmp-win{color:#22c55e;background:rgba(34,197,94,.1);border:1px solid #22c55e;}
+        .cmp-lose{color:#ef4444;background:rgba(239,68,68,.1);border:1px solid #ef4444;}
+        .cmp-tie{color:#fbbf24;background:rgba(251,191,36,.1);border:1px solid #fbbf24;}
+
+        /* Selector de tema en header */
+        .theme-selector { display:flex; gap:3px; height:32px; background:rgba(255,255,255,.03); border-radius:4px; padding:0 6px; align-items:center; border:1px solid rgba(251,191,36,.2); margin:0 8px; }
+        .theme-btn { background:transparent; border:none; cursor:pointer; font-size:14px; padding:0 4px; transition:all .15s; opacity:.6; }
+        .theme-btn:hover { opacity:1; transform:scale(1.2); }
+        .theme-btn.active { opacity:1; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div class="header-title">🧮 CALCULADORA DE DAÑO</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+        <div class="level-badge">Nvl <input class="level-input" type="number" id="globalLevel" value="100" min="1" max="100" onchange="recalcAll()"></div>
+        <div class="theme-selector">
+            <button onclick="setCalcTheme('default')" class="theme-btn active" id="calc-theme-default" title="Clásico">⚪</button>
+            <button onclick="setCalcTheme('etherdiel')" class="theme-btn" id="calc-theme-etherdiel" title="Etherdiel">✨</button>
+            <button onclick="setCalcTheme('helodian')" class="theme-btn" id="calc-theme-helodian" title="Helodian">🔥</button>
+        </div>
+        <a href="battle.html" class="nav-btn">⚔️ BATALLA</a>
+        <a href="team-builder.html" class="nav-btn">⚙️ CONSTRUCTOR</a>
+    </div>
+</div>
+
+<!-- Barra de comparativa -->
+<div id="comparisonBar" class="comparison">
+    <div class="cmp-grid" id="cmpGrid"></div>
+</div>
+
+<div class="layout" id="mainLayout">
+
+    <!-- ══ LADO JUGADOR ══ -->
+    <div class="side side-player">
+        <div class="side-title player-title">🟢 TU POKÉMON</div>
+
+        <div class="poke-selector">
+            <div class="poke-select-list" id="playerPokeList"></div>
+        </div>
+
+        <div class="poke-card" id="playerCard">
+            <div style="color:#334155;font-size:7px;align-self:center;width:100%;text-align:center;">← Selecciona un Pokémon</div>
+        </div>
+
+        <div class="config-section" id="playerConfig" style="display:none;">
+            <div class="config-row">
+                <span class="config-label">Naturaleza</span>
+                <select class="config-select" id="playerNature" onchange="recalcAll()"></select>
+            </div>
+            <div class="config-row">
+                <span class="config-label">Objeto</span>
+                <select class="config-select" id="playerItem" onchange="recalcAll()"></select>
+            </div>
+            <div class="config-row">
+                <span class="config-label">Habilidad</span>
+                <select class="config-select" id="playerAbility" onchange="recalcAll()"></select>
+            </div>
+            <div style="font-size:5.5px;color:#64748b;margin-bottom:4px;">EVs</div>
+            <div class="stat-mini-row" id="playerEVrow">
+                <div class="stat-mini-cell" style="color:#22c55e;">HP<b id="pev-hp">0</b></div>
+                <div class="stat-mini-cell" style="color:#ef4444;">ATK<b id="pev-atk">0</b></div>
+                <div class="stat-mini-cell" style="color:#3b82f6;">DEF<b id="pev-def">0</b></div>
+                <div class="stat-mini-cell" style="color:#a855f7;">SPA<b id="pev-spa">0</b></div>
+                <div class="stat-mini-cell" style="color:#eab308;">SPD<b id="pev-spd">0</b></div>
+                <div class="stat-mini-cell" style="color:#ec4899;">SPE<b id="pev-spe">0</b></div>
+            </div>
+            <div class="config-row" style="margin-top:4px;">
+                <input type="range" min="0" max="252" step="4" value="0" id="pev-atk-slider" oninput="updateEV('player','atk',this.value)" style="flex:1;accent-color:#ef4444;">
+                <span style="font-size:5px;color:#64748b;">ATK EV</span>
+            </div>
+            <div class="config-row">
+                <input type="range" min="0" max="252" step="4" value="0" id="pev-spa-slider" oninput="updateEV('player','spa',this.value)" style="flex:1;accent-color:#a855f7;">
+                <span style="font-size:5px;color:#64748b;">SPA EV</span>
+            </div>
+        </div>
+
+        <div class="moves-section" id="playerMoves">
+            <div style="color:#334155;font-size:6px;text-align:center;margin-top:20px;">Selecciona un Pokémon para ver sus movimientos</div>
+        </div>
+    </div>
+
+    <!-- ══ LADO RIVAL ══ -->
+    <div class="side side-enemy">
+        <div class="side-title enemy-title">🔴 POKÉMON RIVAL</div>
+
+        <div class="poke-selector">
+            <div class="poke-select-list" id="enemyPokeList"></div>
+        </div>
+
+        <div class="poke-card" id="enemyCard">
+            <div style="color:#334155;font-size:7px;align-self:center;width:100%;text-align:center;">← Selecciona un Pokémon</div>
+        </div>
+
+        <div class="config-section" id="enemyConfig" style="display:none;">
+            <div class="config-row">
+                <span class="config-label">Naturaleza</span>
+                <select class="config-select" id="enemyNature" onchange="recalcAll()"></select>
+            </div>
+            <div class="config-row">
+                <span class="config-label">Objeto</span>
+                <select class="config-select" id="enemyItem" onchange="recalcAll()"></select>
+            </div>
+            <div class="config-row">
+                <span class="config-label">Habilidad</span>
+                <select class="config-select" id="enemyAbility" onchange="recalcAll()"></select>
+            </div>
+            <div style="font-size:5.5px;color:#64748b;margin-bottom:4px;">EVs DEF/SPD</div>
+            <div class="stat-mini-row" id="enemyEVrow">
+                <div class="stat-mini-cell" style="color:#22c55e;">HP<b id="eev-hp">0</b></div>
+                <div class="stat-mini-cell" style="color:#ef4444;">ATK<b id="eev-atk">0</b></div>
+                <div class="stat-mini-cell" style="color:#3b82f6;">DEF<b id="eev-def">0</b></div>
+                <div class="stat-mini-cell" style="color:#a855f7;">SPA<b id="eev-spa">0</b></div>
+                <div class="stat-mini-cell" style="color:#eab308;">SPD<b id="eev-spd">0</b></div>
+                <div class="stat-mini-cell" style="color:#ec4899;">SPE<b id="eev-spe">0</b></div>
+            </div>
+            <div class="config-row" style="margin-top:4px;">
+                <input type="range" min="0" max="252" step="4" value="0" id="eev-def-slider" oninput="updateEV('enemy','def',this.value)" style="flex:1;accent-color:#3b82f6;">
+                <span style="font-size:5px;color:#64748b;">DEF EV</span>
+            </div>
+            <div class="config-row">
+                <input type="range" min="0" max="252" step="4" value="0" id="eev-spd-slider" oninput="updateEV('enemy','spd',this.value)" style="flex:1;accent-color:#eab308;">
+                <span style="font-size:5px;color:#64748b;">SPD EV</span>
+            </div>
+        </div>
+
+        <div class="moves-section" id="enemyMoves">
+            <div style="color:#334155;font-size:6px;text-align:center;margin-top:20px;">Selecciona un Pokémon para ver sus movimientos</div>
+        </div>
+    </div>
+</div>
+
+<script src="data/sprites.js"></script>
+<script src="data/types.js"></script>
+<script src="data/status.js"></script>
+<script src="data/moves.js"></script>
+<script src="data/items.js"></script>
+<script src="data/natures.js"></script>
+<script src="data/abilities.js"></script>
+<script src="data/pokemon.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// CALCULADORA DE DAÑO — Estado
+// ═══════════════════════════════════════════════════════════════════════════
+const state = {
+    player: { id:null, nature:'Seria', item:'Ninguno', ability:'', evs:{hp:0,atk:0,def:0,spa:0,spd:0,spe:0} },
+    enemy:  { id:null, nature:'Seria', item:'Ninguno', ability:'', evs:{hp:0,atk:0,def:0,spa:0,spd:0,spe:0} },
+};
+
+function getLevel() { return Math.min(100, Math.max(1, parseInt(document.getElementById('globalLevel').value)||100)); }
+
+// ─── FÓRMULAS ────────────────────────────────────────────────────────────────
+function getNatureMults(name) {
+    const n = NaturesDB[name]||{};
+    const m = {atk:1,def:1,spa:1,spd:1,spe:1};
+    if(n.up)   m[n.up]   = 1.1;
+    if(n.down) m[n.down] = 0.9;
+    return m;
+}
+function calcHP(base,ev,lvl)  { return Math.floor(((2*base+31+Math.floor(ev/4))*lvl)/100)+lvl+10; }
+function calcStat(base,ev,lvl,nat) { return Math.floor((Math.floor(((2*base+31+Math.floor(ev/4))*lvl)/100)+5)*nat); }
+
+function buildPokemon(sid) {
+    const s    = state[sid];
+    const base = PokemonDB[s.id];
+    if (!base) return null;
+    const lvl  = getLevel();
+    const nat  = getNatureMults(s.nature);
+    const evs  = s.evs;
+    const stats = {
+        hp:  calcHP  (base.stats.hp,  evs.hp,  lvl),
+        atk: calcStat(base.stats.atk, evs.atk, lvl, nat.atk),
+        def: calcStat(base.stats.def, evs.def, lvl, nat.def),
+        spa: calcStat(base.stats.spa, evs.spa, lvl, nat.spa),
+        spd: calcStat(base.stats.spd, evs.spd, lvl, nat.spd),
+        spe: calcStat(base.stats.spe, evs.spe, lvl, nat.spe),
+    };
+    return {
+        ...base, stats, level:lvl,
+        nature: s.nature, item: s.item, ability: s.ability || (base.abilities&&base.abilities[0])||base.ability||'',
+        currentHp: stats.hp, fainted:false, itemUsed:false, status:null,
+        statBoosts:{atk:0,def:0,spa:0,spd:0,spe:0},
+    };
+}
+
+function calcDmg(attacker, defender, moveName, factor) {
+    const move = MovesDB[moveName];
+    if (!move||!move.power||move.category==='status') return {min:0,max:0,eff:1};
+    const isFis = move.category==='physical';
+    const atkStat = isFis ? attacker.stats.atk : attacker.stats.spa;
+    const defStat = isFis ? defender.stats.def : defender.stats.spd;
+    const lvl = attacker.level||100;
+
+    // Item boosts
+    const itemD = ItemsDB[attacker.item]||{};
+    let itmTyp = 1, itmDmg = 1;
+    if (itemD.effect==='boost_type' && itemD.boostedType===move.type) itmTyp = itemD.value||1;
+    if (itemD.effect==='boost_all_damage') itmDmg = itemD.value||1;
+
+    // Ability
+    let abMult = 1;
+    const ab = AbilitiesDB[attacker.ability];
+    if(ab&&ab.trigger==='on_attack'){
+        if(ab.effect==='boost_type_atk'&&move.type===ab.boostedType) abMult=ab.value;
+        if(ab.effect==='crit_boost'||ab.effect==='brute_force') abMult=ab.value;
+    }
+    const defAb = AbilitiesDB[defender.ability];
+    let defAbMult = 1;
+    if(defAb&&defAb.trigger==='on_hit'){
+        if(defAb.effect==='reduce_physical_dmg'&&isFis) defAbMult=defAb.value;
+        if(defAb.effect==='reduce_special_dmg'&&!isFis) defAbMult=defAb.value;
+    }
+
+    const stab = attacker.types.includes(move.type) ? 1.5 : 1;
+    const eff  = (() => {
+        let m=1; const c=TypeChart[move.type];
+        if(c) defender.types.forEach(dt=>{if(c[dt]!==undefined)m*=c[dt];});
+        return m;
+    })();
+    const burn = attacker.status==='burn'&&isFis ? 0.5:1;
+    const base  = Math.floor(Math.floor(Math.floor(2*lvl/5+2)*move.power*(atkStat/defStat))/50)+2;
+    const calc  = f => Math.max(1, Math.floor(base * stab * eff * itmTyp * itmDmg * abMult * defAbMult * burn * f));
+    return { min: calc(0.85), max: calc(1.0), eff };
+}
+
+function getMoveInfo(name) { return MovesDB[name] || {power:0,category:'status',type:'NORMAL',name}; }
+
+// ─── RENDER PRINCIPAL ─────────────────────────────────────────────────────────
+function init() {
+    // Poblar listas de Pokémon
+    const pList = document.getElementById('playerPokeList');
+    const eList = document.getElementById('enemyPokeList');
+    Object.values(PokemonDB).forEach(p => {
+        [pList, eList].forEach((list, si) => {
+            const chip = document.createElement('div');
+            chip.className = 'poke-chip';
+            chip.textContent = p.name;
+            chip.dataset.id  = p.id;
+            chip.onclick = () => selectPokemon(si===0?'player':'enemy', p.id, chip, list);
+            list.appendChild(chip);
+        });
+    });
+    // Poblar naturalezas e ítems
+    ['player','enemy'].forEach(sid => {
+        const natSel = document.getElementById(`${sid}Nature`);
+        Object.entries(NaturesDB).forEach(([k,n]) => {
+            const opt = document.createElement('option');
+            opt.value = k; opt.textContent = n.label;
+            natSel.appendChild(opt);
+        });
+        const itmSel = document.getElementById(`${sid}Item`);
+        Object.values(ItemsDB).forEach(it => {
+            const opt = document.createElement('option');
+            opt.value = it.name; opt.textContent = it.name;
+            itmSel.appendChild(opt);
+        });
+    });
+}
+
+function selectPokemon(sid, id, chip, list) {
+    // Deseleccionar anterior
+    list.querySelectorAll('.poke-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    state[sid].id      = id;
+    const base         = PokemonDB[id];
+    state[sid].ability = (base.abilities&&base.abilities[0])||base.ability||'';
+    state[sid].item    = 'Ninguno';
+    renderCard(sid);
+    recalcAll();
+}
+
+function renderCard(sid) {
+    const s    = state[sid];
+    const base = PokemonDB[s.id];
+    if (!base) return;
+    const poke = buildPokemon(sid);
+    const sp   = getSpriteUrl(base.id, sid==='player'?'back':'front');
+
+    const card = document.getElementById(`${sid}Card`);
+    card.innerHTML = `
+        <img class="poke-sprite" src="${sp}" onerror="onSpriteError(this,${base.id})">
+        <div class="poke-info">
+            <div class="poke-name">${base.name}</div>
+            <div class="poke-types">${base.types.map(t=>`<span class="type-badge type-${t.replace(/[ÉÍÓ]/g,c=>({'É':'E','Í':'I','Ó':'O'}[c]))}">${t}</span>`).join('')}</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;font-size:5.5px;margin-top:4px;">
+                <span style="color:#22c55e;">HP ${poke.stats.hp}</span>
+                <span style="color:#ef4444;">ATK ${poke.stats.atk}</span>
+                <span style="color:#3b82f6;">DEF ${poke.stats.def}</span>
+                <span style="color:#a855f7;">SPA ${poke.stats.spa}</span>
+                <span style="color:#eab308;">SPD ${poke.stats.spd}</span>
+                <span style="color:#ec4899;">SPE ${poke.stats.spe}</span>
+            </div>
+        </div>`;
+
+    // Mostrar config
+    const cfg = document.getElementById(`${sid}Config`);
+    cfg.style.display = 'block';
+
+    // Poblar habilidades
+    const abSel = document.getElementById(`${sid}Ability`);
+    abSel.innerHTML = '';
+    const abils = base.abilities || (base.ability ? [base.ability] : []);
+    abils.forEach(ab => {
+        const opt = document.createElement('option');
+        opt.value = ab; opt.textContent = ab;
+        if (ab === s.ability) opt.selected = true;
+        abSel.appendChild(opt);
+    });
+    abSel.onchange = () => { state[sid].ability = abSel.value; recalcAll(); };
+
+    // Sync nature/item
+    document.getElementById(`${sid}Nature`).value = s.nature;
+    document.getElementById(`${sid}Item`).value   = s.item;
+}
+
+function updateEV(sid, stat, val) {
+    state[sid].evs[stat] = parseInt(val);
+    // Actualizar badge
+    const key = sid==='player' ? `pev-${stat}` : `eev-${stat}`;
+    const el  = document.getElementById(key);
+    if (el) el.textContent = val;
+    recalcAll();
+}
+
+function recalcAll() {
+    // Sync selects → state
+    ['player','enemy'].forEach(sid => {
+        if (!state[sid].id) return;
+        const natEl = document.getElementById(`${sid}Nature`);
+        const itmEl = document.getElementById(`${sid}Item`);
+        if (natEl) state[sid].nature = natEl.value;
+        if (itmEl) state[sid].item   = itmEl.value;
+        renderCard(sid);
+        renderMoveResults(sid);
+    });
+    renderComparison();
+}
+
+function renderMoveResults(sid) {
+    const attSide = sid;
+    const defSide = sid==='player' ? 'enemy' : 'player';
+    if (!state[attSide].id || !state[defSide].id) return;
+
+    const attacker = buildPokemon(attSide);
+    const defender = buildPokemon(defSide);
+    const base     = PokemonDB[state[attSide].id];
+    const moves    = base.learnset || base.moves || [];
+    const cont     = document.getElementById(`${sid}Moves`);
+
+    const results = moves.map(moveName => {
+        const move = getMoveInfo(moveName);
+        const {min, max, eff} = calcDmg(attacker, defender, moveName);
+        return {moveName, move, min, max, eff};
+    }).sort((a,b) => b.max - a.max);
+
+    cont.innerHTML = results.map(({moveName, move, min, max, eff}) => {
+        const hpMax    = defender.stats.hp;
+        const pctMax   = Math.round((max/hpMax)*100);
+        const pctMin   = Math.round((min/hpMax)*100);
+        const isOHKO   = max >= hpMax;
+        const is2HKO   = min*2 >= hpMax;
+        const barColor = isOHKO ? '#ef4444' : is2HKO ? '#f59e0b' : '#3b82f6';
+        const norm = t => t.replace(/[ÉÍÓ]/g,c=>({'É':'E','Í':'I','Ó':'O'}[c]));
+        const tc   = `mv-${norm(move.type||'NORMAL')}`;
+        let effBadge = '';
+        if      (eff>=4)              effBadge = `<span class="mr-eff-badge eff-hyper">⚡ ×${eff}</span>`;
+        else if (eff>1)               effBadge = `<span class="mr-eff-badge eff-super">💥 ×${eff}</span>`;
+        else if (eff<1 && eff>0)      effBadge = `<span class="mr-eff-badge eff-weak">×${eff}</span>`;
+        else if (eff===0)             effBadge = `<span class="mr-eff-badge eff-none">×0 Sin efecto</span>`;
+        else                          effBadge = `<span class="mr-eff-badge eff-neutral">×1</span>`;
+        const catLabel = move.category==='physical'?'⚔️':move.category==='status'?'🌀':'✨';
+        const statusNote = move.effect?.startsWith('apply_') ? `<div class="mr-status">⚠️ Puede causar estado</div>` : '';
+        const koNote = isOHKO ? '<span class="mr-ko"> ⚡ OHKO</span>' : is2HKO ? '<span style="color:#f59e0b;font-size:6px;"> 2HKO</span>' : '';
+        if (move.category==='status') {
+            return `<div class="move-result ${tc}" style="opacity:.6;">
+                <div class="mr-header">
+                    <div>
+                        <div class="mr-name">🌀 ${moveName}</div>
+                        <div class="mr-meta"><span>${move.type}</span><span>${catLabel} Estado</span></div>
+                    </div>
+                    <div class="mr-dmg"><div class="mr-dmg-range" style="color:#64748b;">—</div></div>
+                </div>
+                ${move.description?`<div style="font-size:5.5px;color:#475569;margin-top:3px;">${move.description}</div>`:''}
+                ${statusNote}
+            </div>`;
+        }
+        return `<div class="move-result ${tc} ${isOHKO?'mr-ohko':''}">
+            <div class="mr-header">
+                <div style="flex:1;">
+                    <div class="mr-name">${moveName}${koNote}</div>
+                    <div class="mr-meta">
+                        <span>${move.type}</span>
+                        <span>${catLabel} POW${move.power}</span>
+                        ${effBadge}
+                    </div>
+                    ${move.description?`<div style="font-size:5.5px;color:#475569;margin-top:2px;line-height:1.8;">${move.description}</div>`:''}
+                    ${statusNote}
+                </div>
+                <div class="mr-dmg">
+                    <div class="mr-dmg-range" style="color:${barColor};">${min}–${max}</div>
+                    <div class="mr-dmg-pct">${pctMin}–${pctMax}%</div>
+                </div>
+            </div>
+            <div class="mr-bar-bg">
+                <div class="mr-bar-fill" style="width:${Math.min(100,pctMax)}%;background:${barColor};"></div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function renderComparison() {
+    if (!state.player.id || !state.enemy.id) return;
+    const attP = buildPokemon('player');
+    const attE = buildPokemon('enemy');
+    const bP   = PokemonDB[state.player.id];
+    const bE   = PokemonDB[state.enemy.id];
+    const movP = (bP.learnset||bP.moves||[]);
+    const movE = (bE.learnset||bE.moves||[]);
+    const bestP = movP.reduce((best, mv) => { const {max} = calcDmg(attP, attE, mv); return max > best ? max : best; }, 0);
+    const bestE = movE.reduce((best, mv) => { const {max} = calcDmg(attE, attP, mv); return max > best ? max : best; }, 0);
+    const pctP = Math.round((bestP/attE.stats.hp)*100);
+    const pctE = Math.round((bestE/attP.stats.hp)*100);
+    const bar = document.getElementById('comparisonBar');
+    const grid = document.getElementById('cmpGrid');
+    bar.classList.add('visible');
+    const verdict = pctP >= 100 && pctE < 100 ? `<div class="cmp-verdict cmp-win">✅ ${bP.name} GANA</div>`
+                  : pctE >= 100 && pctP < 100 ? `<div class="cmp-verdict cmp-lose">❌ ${bE.name} GANA</div>`
+                  : pctP >= 100 && pctE >= 100 ? `<div class="cmp-verdict cmp-tie">⚡ AMBOS PUEDEN OHKO</div>`
+                  : `<div class="cmp-verdict cmp-tie">🤔 Ninguno OHKO — daño máx: ${bP.name} ${pctP}% vs ${bE.name} ${pctE}%</div>`;
+    grid.innerHTML = `
+        <div style="font-size:7px;color:#22c55e;">
+            🟢 ${bP.name}<br>
+            <span style="font-size:9px;color:${pctP>=100?'#ef4444':'#fbbf24'};">${pctP}%</span>
+            <span style="font-size:5.5px;color:#64748b;"> daño máx</span>
+        </div>
+        ${verdict}
+        <div style="font-size:7px;color:#f87171;">
+            🔴 ${bE.name}<br>
+            <span style="font-size:9px;color:${pctE>=100?'#ef4444':'#fbbf24'};">${pctE}%</span>
+            <span style="font-size:5.5px;color:#64748b;"> daño máx</span>
+        </div>
+    `;
+}
+
+init();
+
+// Sistema de temas legendarios
+const THEMES = {
+    default: {
+        bg: '#0a0a1a',
+        'bg-darker': '#060612',
+        panel: '#0f172a',
+        border: '#1e293b',
+        'border-light': '#334155',
+        gold: '#fbbf24',
+        'accent-dark': '#1e1b4b',
+        input: '#111827',
+        'text-muted': '#475569',
+        'text-light': '#cbd5e1',
+        text: '#e2e8f0',
+        'text-dark': '#1a1a2e'
+    },
+    etherdiel: {
+        bg: '#f0f0f0',
+        'bg-darker': '#e0e7ff',
+        panel: '#e3f2fd',
+        border: '#1e88e5',
+        'border-light': '#1565c0',
+        gold: '#1e88e5',
+        'accent-dark': '#0d47a1',
+        input: '#bbdefb',
+        'text-muted': '#1565c0',
+        'text-light': '#0d47a1',
+        text: '#000000',
+        'text-dark': '#000000'
+    },
+    helodian: {
+        bg: '#0a0a0a',
+        'bg-darker': '#1a0a0a',
+        panel: '#2a0a0a',
+        border: '#c62828',
+        'border-light': '#b71c1c',
+        gold: '#e53935',
+        'accent-dark': '#7f0000',
+        input: '#4a0a0a',
+        'text-muted': '#ff5252',
+        'text-light': '#ff6e40',
+        text: '#e2e8f0',
+        'text-dark': '#1a1a2e'
+    }
+};
+
+function applyCalcTheme(themeName) {
+    const theme = THEMES[themeName] || THEMES.default;
+    document.documentElement.style.setProperty('--theme-bg', theme.bg);
+    document.documentElement.style.setProperty('--theme-bg-darker', theme['bg-darker']);
+    document.documentElement.style.setProperty('--theme-panel', theme.panel);
+    document.documentElement.style.setProperty('--theme-border', theme.border);
+    document.documentElement.style.setProperty('--theme-border-light', theme['border-light']);
+    document.documentElement.style.setProperty('--theme-gold', theme.gold);
+    document.documentElement.style.setProperty('--theme-accent-dark', theme['accent-dark']);
+    document.documentElement.style.setProperty('--theme-input', theme.input);
+    document.documentElement.style.setProperty('--theme-text-muted', theme['text-muted']);
+    document.documentElement.style.setProperty('--theme-text-light', theme['text-light']);
+    document.documentElement.style.setProperty('--theme-text', theme.text);
+    document.documentElement.style.setProperty('--theme-text-dark', theme['text-dark']);
+    
+    // Actualizar botones de tema
+    document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
+    const activeBtn = document.getElementById('calc-theme-' + themeName);
+    if (activeBtn) activeBtn.classList.add('active');
+}
+
+function setCalcTheme(themeName) {
+    localStorage.setItem('legendaryTheme', themeName);
+    applyCalcTheme(themeName);
+}
+
+function loadCalcTheme() {
+    const saved = localStorage.getItem('legendaryTheme') || 'default';
+    applyCalcTheme(saved);
+}
+
+loadCalcTheme();
+</script>
+</body>
+</html>

@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Kanto Showdown - Constructor de Equipo</title>
+    <!-- fuente offline: usa monospace del sistema -->
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        :root { 
+            --theme-bg:#0a0a1a;
+            --theme-bg-darker:#060612;
+            --theme-panel:#0f172a; 
+            --theme-border:#1e293b;
+            --theme-border-light:#334155;
+            --theme-gold:#fbbf24;
+            --theme-accent-dark:#1e1b4b;
+            --theme-input:#111827;
+            --theme-text-muted:#475569;
+            --theme-text-light:#cbd5e1;
+            --theme-text-lighter:#9ca3af;
+            --bg:var(--theme-bg); 
+            --panel:var(--theme-panel); 
+            --border:var(--theme-border); 
+            --gold:var(--theme-gold); 
+            --red:#ef4444; 
+            --green:#22c55e; 
+            --blue:#3b82f6; 
+        }
+        body { font-family:'Courier New',Courier,monospace; background:var(--theme-bg); color:#e2e8f0; height:100vh; overflow:hidden; font-size:14px; line-height:1.6; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+        body::after { content:''; position:fixed; inset:0; pointer-events:none; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.015) 2px,rgba(0,0,0,.015) 4px); z-index:9999; }
+
+        /* ── HEADER ─────────────────────────────────────────────────── */
+        .header { background:linear-gradient(90deg,var(--theme-panel),var(--theme-accent-dark),var(--theme-panel)); border-bottom:2px solid var(--gold); padding:.75rem 1.5rem; display:flex; align-items:center; justify-content:space-between; height:52px; }
+        .header-title { font-size:15px; font-weight:bold; color:var(--gold); text-shadow:0 0 20px rgba(251,191,36,.5); }
+        .nav-btn { padding:.5rem .9rem; background:transparent; border:1px solid var(--border); color:#9ca3af; font-family:'Courier New',Courier,monospace; font-size:14px; cursor:pointer; border-radius:4px; text-decoration:none; transition:all .15s; font-weight:500; }
+        .nav-btn:hover { border-color:var(--gold); color:var(--gold); background:rgba(251,191,36,.05); }
+
+        /* ── LAYOUT 2 COLUMNAS ──────────────────────────────────────── */
+        .layout { display:grid; grid-template-columns:380px 1fr; height:calc(100vh - 52px); overflow:hidden; }
+
+        /* ── PANEL IZQUIERDO ────────────────────────────────────────── */
+        .left-panel { background:var(--theme-bg-darker); border-right:2px solid var(--theme-border); display:flex; flex-direction:column; overflow:hidden; }
+
+        /* Equipo activo */
+        .team-section { padding:12px 14px 8px; border-bottom:1px solid var(--theme-border); }
+        .section-title { font-size:14px; font-weight:bold; color:var(--gold); letter-spacing:1px; margin-bottom:8px; text-transform:uppercase; }
+        .team-slots { display:flex; gap:5px; margin-bottom:6px; }
+        .team-slot { position:relative; width:52px; height:52px; background:rgba(255,255,255,.02); border:2px solid var(--theme-border); border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s; overflow:hidden; }
+        .team-slot.filled:hover { border-color:var(--gold); transform:translateY(-2px); }
+        .team-slot.editing { border-color:var(--gold)!important; box-shadow:0 0 10px rgba(251,191,36,.4); }
+        .team-slot img { width:46px; height:46px; object-fit:contain; image-rendering:pixelated; }
+        .slot-empty-icon { font-size:20px; color:var(--theme-border); }
+        .slot-remove { position:absolute; top:1px; right:2px; font-size: 13px; color:#ef4444; cursor:pointer; opacity:0; transition:opacity .15s; line-height:1; }
+        .team-slot:hover .slot-remove { opacity:1; }
+        .slot-nature-badge { position:absolute; bottom:0; left:0; right:0; font-size:4.5px; padding:1px 2px; text-align:center; }
+        .slot-item-dot { position:absolute; top:2px; left:2px; width:5px; height:5px; border-radius:50%; background:var(--gold); }
+        .team-meta { display:flex; justify-content:space-between; align-items:center; font-size: 8.5px; color:var(--theme-text-muted); }
+        #minWarning { color:#ef4444; }
+
+        /* Botones de acción */
+        .action-buttons { padding:10px 14px; border-bottom:1px solid var(--theme-border); display:flex; flex-direction:column; gap:6px; }
+        .action-btn { width:100%; padding:8px; border:none; border-radius:5px; font-family:'Courier New',Courier,monospace; font-size: 12px; cursor:pointer; transition:all .15s; }
+        .action-btn:hover { filter:brightness(1.1); }
+        .action-btn:disabled { opacity:.4; cursor:not-allowed; filter:none; }
+        .btn-battle { background:linear-gradient(135deg,#f59e0b,#ef4444); color:#1a1a2e; font-size:13px; box-shadow:0 3px 0 #b45309; }
+        .btn-row { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+        .btn-save  { background:#166534; color:#4ade80; font-size: 13px; }
+        .btn-load  { background:#1e1b4b; color:#818cf8; border:1px solid #3730a3; font-size: 13px; }
+        .btn-trainer{ background:#4c1d95; color:#c4b5fd; font-size: 13px; }
+        .btn-wild   { background:#164e63; color:#67e8f9; font-size: 13px; }
+        #savedStatus { font-size: 12px; color:var(--theme-border-light); text-align:center; padding:3px; border:1px solid var(--theme-border); border-radius:3px; }
+
+        /* Pokémon disponibles */
+        .available-section { flex:1; overflow-y:auto; padding:10px 14px; }
+        .pokemon-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+        .poke-card { background:rgba(255,255,255,.03); border:2px solid var(--border); border-radius:7px; padding:6px 4px; cursor:pointer; transition:all .15s; text-align:center; }
+        .poke-card:hover:not(.in-team) { border-color:var(--gold); background:rgba(251,191,36,.05); transform:translateY(-2px); }
+        .poke-card.in-team { border-color:var(--green); background:rgba(34,197,94,.06); opacity:.55; cursor:not-allowed; }
+        .poke-card img { width:52px; height:52px; object-fit:contain; image-rendering:pixelated; }
+        .poke-name { font-size:11px; color:#cbd5e1; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:500; }
+        .poke-types { display:flex; gap:2px; justify-content:center; margin-top:2px; flex-wrap:wrap; }
+        .type-badge { font-size:8px; padding:2px 4px; border-radius:2px; font-weight:600; }
+
+        /* Type colors */
+        .type-FUEGO,.type-FIRE{background:#dc2626;} .type-AGUA,.type-WATER{background:#2563eb;} .type-PLANTA{background:#16a34a;}
+        .type-ELECTRICO,.type-ELÉCTRICO{background:#ca8a04;color:#1a1a2e;} .type-FANTASMA{background:#7e22ce;} .type-TIERRA{background:#92400e;}
+        .type-NORMAL{background:#6b7280;} .type-PSÍQUICO,.type-PSIQUICO{background:#db2777;} .type-LUCHA{background:#c2410c;}
+        .type-VOLADOR{background:#4f46e5;} .type-VENENO{background:#7c3aed;} .type-HIELO{background:#0891b2;}
+        .type-ROCA{background:#a16207;} .type-DRAGÓN,.type-DRAGON{background:#4338ca;} .type-SINIESTRO{background:#1f2937;border:1px solid #374151;}
+        .type-ACERO{background:#64748b;} .type-BICHO{background:#4d7c0f;} .type-HADA{background:#f472b6;color:#1a1a2e;}
+        ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-thumb{background:var(--theme-border);border-radius:2px;}
+
+        /* ── PANEL DERECHO ───────────────────────────────────────────── */
+        .right-panel { background:var(--bg); overflow-y:auto; padding:1.5rem; display:flex; flex-direction:column; gap:14px; }
+
+        /* Pokémon del equipo como selector visual */
+        .team-editor-bar { display:none; /* se muestra con JS cuando hay equipo */ }
+        .team-editor-bar.visible { display:block; }
+        .teb-title { font-size: 13px; color:var(--gold); margin-bottom:8px; }
+        .teb-slots { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+        .teb-slot { position:relative; cursor:pointer; transition:all .15s; width:84px; display:flex; flex-direction:column; align-items:center; }
+        .teb-slot img { width:64px; height:64px; object-fit:contain; image-rendering:pixelated; border:2px solid var(--theme-border); border-radius:8px; background:rgba(255,255,255,.02); }
+        .teb-slot:hover img { border-color:#fbbf24; transform:translateY(-3px); }
+        .teb-slot.active img { border-color:var(--gold); box-shadow:0 0 14px rgba(251,191,36,.5); transform:translateY(-3px); }
+        .teb-slot-name { font-size:11px; color:#cbd5e1; text-align:center; margin-top:6px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; }
+        .teb-slot.active .teb-slot-name { color:var(--gold); }
+        
+        /* Drag and drop para team slots */
+        .team-slot.dragging, .teb-slot.dragging { opacity:0.5; }
+        .team-slot.drag-over, .teb-slot.drag-over { border-color:var(--gold)!important; background:rgba(251,191,36,.08)!important; }
+
+        /* Panel de entrenadores */
+        .trainer-select-panel { display:none; }
+        .trainer-select-panel.visible { display:block; }
+        .trainer-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; }
+        .trainer-card { background:var(--theme-panel); border:2px solid var(--theme-border); border-radius:8px; padding:14px 12px; cursor:pointer; transition:all .15s; text-align:center; }
+        .trainer-card:hover { transform:translateY(-3px); box-shadow:0 6px 20px rgba(0,0,0,.5); }
+        .trainer-avatar { font-size:32px; margin-bottom:8px; }
+        .trainer-name { font-size: 13px; margin-bottom:4px; }
+        .trainer-title { font-size: 9.5px; color:#64748b; margin-bottom:6px; line-height:1.6; }
+        .trainer-team-preview { display:flex; justify-content:center; gap:3px; flex-wrap:wrap; }
+        .trainer-team-preview img { width:24px; height:24px; image-rendering:pixelated; }
+
+        /* Panel salvaje */
+        .wild-select-panel { display:none; }
+        .wild-select-panel.visible { display:block; }
+        .wild-grid { display:flex; flex-direction:column; gap:10px; max-width:500px; }
+        .wild-card { background:var(--theme-panel); border:2px solid var(--theme-border); border-radius:8px; padding:16px; cursor:pointer; transition:all .15s; display:flex; align-items:center; gap:14px; }
+        .wild-card:hover { border-color:var(--gold); transform:translateY(-2px); }
+        .wild-icon { font-size:28px; }
+        .wc-title { font-size: 13px; margin-bottom:5px; }
+        .wc-desc  { font-size: 8.5px; color:#64748b; line-height:1.7; }
+
+        /* Placeholder central */
+        .right-placeholder { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; color:var(--theme-border); gap:12px; }
+        .right-placeholder .ph-icon { font-size:64px; }
+        .right-placeholder .ph-text { font-size: 12px; text-align:center; line-height:2.2; }
+
+        /* Toast */
+        .toast { position:fixed; bottom:2rem; right:2rem; background:var(--theme-panel); border:2px solid var(--gold); color:var(--gold); padding:.6rem 1.2rem; border-radius:4px; font-size: 12px; z-index:1000; animation:toastIn .3s; }
+        @keyframes toastIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+        /* ══════════════════════════════════════════════════════════════
+           EDITOR MODAL
+           ══════════════════════════════════════════════════════════════ */
+        .editor-modal { position:fixed; inset:0; background:rgba(0,0,0,.88); z-index:500; display:none; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+        .editor-modal.open { display:flex; }
+        .editor-modal-box { background:#0d1117; border:2px solid var(--gold); border-radius:10px; width:700px; max-width:96vw; max-height:92vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 0 60px rgba(251,191,36,.15); animation:modalIn .2s; }
+        @keyframes modalIn { from{opacity:0;transform:scale(.95) translateY(-10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+
+        .em-header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:linear-gradient(90deg,var(--theme-panel),var(--theme-accent-dark),var(--theme-panel)); border-bottom:2px solid var(--theme-border); flex-shrink:0; }
+        .em-header-left { display:flex; align-items:center; gap:12px; }
+        .em-header-sprite { width:60px; height:60px; object-fit:contain; image-rendering:pixelated; filter:drop-shadow(0 4px 8px rgba(0,0,0,.6)); }
+        .em-header-name  { font-size:12px; margin-bottom:4px; }
+        .em-header-types { display:flex; gap:4px; margin-bottom:3px; }
+        .em-header-ability { font-size: 12px; color:#a5b4fc; }
+        .em-close-btn { background:transparent; border:1px solid #374151; color:#64748b; padding:5px 10px; border-radius:4px; cursor:pointer; font-family:'Courier New',Courier,monospace; font-size: 12px; transition:all .15s; }
+        .em-close-btn:hover { border-color:#ef4444; color:#ef4444; }
+
+        .em-tabs { display:flex; background:var(--theme-bg-darker); border-bottom:2px solid var(--theme-border); flex-shrink:0; }
+        .em-tab { flex:1; padding:10px 5px; background:transparent; border:none; border-bottom:3px solid transparent; color:#64748b; font-family:'Courier New',Courier,monospace; font-size:10px; cursor:pointer; transition:all .15s; font-weight:600; }
+        .em-tab:hover { color:#94a3b8; }
+        .em-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+
+        .em-body { flex:1; overflow-y:auto; padding:14px 16px; }
+        .em-footer { padding:10px 16px; border-top:2px solid var(--theme-border); background:var(--theme-bg-darker); flex-shrink:0; }
+        .em-save-btn { width:100%; padding:10px; background:linear-gradient(135deg,#f59e0b,#d97706); border:none; border-radius:5px; color:#0a0a0a; font-family:'Courier New',Courier,monospace; font-size:13px; cursor:pointer; transition:all .15s; font-weight:bold; }
+        .em-save-btn:hover { filter:brightness(1.1); }
+
+        /* Movimientos */
+        .moves-count-badge { display:inline-block; font-size: 13px; padding:2px 8px; border-radius:12px; margin-bottom:8px; }
+        .moves-count-ok   { background:rgba(34,197,94,.15); color:#22c55e; border:1px solid #22c55e; }
+        .moves-count-warn { background:rgba(251,191,36,.15); color:#fbbf24; border:1px solid #fbbf24; }
+        .moves-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+        .move-option { background:var(--theme-input); border:2px solid var(--theme-border); border-radius:5px; padding:8px; cursor:pointer; transition:all .15s; opacity:.8; }
+        .move-option:hover { border-color:var(--theme-text-muted); opacity:1; }
+        .move-option.selected { border-color:var(--gold); opacity:1; background:#1c1a0e; }
+        .mo-name { font-size:12px; color:#e2e8f0; margin-bottom:3px; font-weight:bold; }
+        .mo-meta { font-size:11px; color:#94a3b8; font-weight:500; }
+        .mo-desc { font-size:10px; color:#64748b; line-height:1.5; margin-top:2px; }
+        .mv-FUEGO{border-left:3px solid #ef4444;} .mv-AGUA{border-left:3px solid #3b82f6;} .mv-PLANTA{border-left:3px solid #22c55e;}
+        .mv-ELECTRICO,.mv-ELÉCTRICO{border-left:3px solid #eab308;} .mv-PSIQUICO,.mv-PSÍQUICO{border-left:3px solid #ec4899;}
+        .mv-HIELO{border-left:3px solid #67e8f9;} .mv-DRAGON,.mv-DRAGÓN{border-left:3px solid #6366f1;} .mv-ACERO{border-left:3px solid #94a3b8;}
+        .mv-LUCHA{border-left:3px solid #f97316;} .mv-VENENO{border-left:3px solid #a855f7;} .mv-TIERRA{border-left:3px solid #92400e;}
+        .mv-VOLADOR{border-left:3px solid #7dd3fc;} .mv-FANTASMA{border-left:3px solid #7c3aed;} .mv-ROCA{border-left:3px solid #a8a29e;}
+        .mv-NORMAL{border-left:3px solid #64748b;} .mv-SINIESTRO{border-left:3px solid #374151;} .mv-BICHO{border-left:3px solid #84cc16;} .mv-HADA{border-left:3px solid #f472b6;}
+
+        /* Naturaleza + EVs en misma pestaña */
+        .nature-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(115px,1fr)); gap:4px; margin-bottom:12px; }
+        .nature-option { padding:7px 9px; background:var(--theme-input); border:2px solid var(--theme-border); border-radius:5px; cursor:pointer; transition:all .15s; font-size:9px; font-weight:500; color:var(--theme-text-light); }
+        .nature-option:hover { border-color:var(--theme-border-light); }
+        .nature-option.selected { border-color:var(--gold); background:#1c1a0e; color:var(--gold); }
+
+        /* Habilidad (2 opciones) + Objeto */
+        .items-list { display:flex; flex-direction:column; gap:5px; }
+        .item-option { display:flex; align-items:center; gap:10px; background:var(--theme-input); border:2px solid var(--theme-border); border-radius:6px; padding:8px 10px; cursor:pointer; transition:all .15s; }
+        .item-option:hover { border-color:var(--theme-border-light); }
+        .item-option.selected { border-color:var(--gold); background:#1c1a0e; }
+        .item-icon { font-size:18px; flex-shrink:0; }
+        .item-option-name { font-size:13px; color:#e2e8f0; margin-bottom:3px; font-weight:bold; }
+        .item-option-desc { font-size:11px; color:#94a3b8; line-height:1.5; font-weight:500; }
+
+        /* EVs */
+        .evs-total { font-size: 8.5px; margin-bottom:8px; }
+        .evs-total.ok { color:#22c55e; } .evs-total.over { color:#ef4444; }
+        .stat-row { margin-bottom:9px; }
+        .stat-label-row { display:flex; justify-content:space-between; font-size: 13px; margin-bottom:4px; }
+        .stat-controls { display:flex; align-items:center; gap:4px; }
+        .stat-btn { background:var(--theme-border); border:1px solid var(--theme-border-light); color:white; padding:2px 7px; font-size: 13px; cursor:pointer; border-radius:3px; }
+        .stat-btn:hover { background:var(--theme-border-light); }
+        input[type=range].stat-slider { accent-color:var(--gold); height:4px; cursor:pointer; flex:1; }
+        .stat-bar-bg   { height:3px; background:var(--theme-border); border-radius:2px; margin:3px 0 2px; overflow:hidden; }
+        .stat-bar-fill { height:100%; border-radius:2px; transition:width .2s; }
+        .stat-evs { font-size: 9.5px; color:var(--theme-text-muted); }
+        .editor-hint { font-size:10px; color:#64748b; margin-top:8px; line-height:1.8; font-weight:500; }
+        .editor-hint code { color:#7dd3fc; }
+
+        /* Modal mis equipos */
+        .saved-team-row { display:flex; align-items:center; gap:10px; padding:10px; background:var(--theme-panel); border:1px solid var(--theme-border); border-radius:6px; margin-bottom:6px; }
+        .saved-team-sprites { display:flex; gap:2px; }
+        .saved-team-sprites img { width:30px; height:30px; image-rendering:pixelated; }
+        .saved-team-name { flex:1; font-size: 12px; color:white; }
+        .saved-team-actions { display:flex; gap:5px; }
+        .stm-btn { padding:4px 8px; border:none; border-radius:3px; font-family:'Courier New',Courier,monospace; font-size: 12px; cursor:pointer; }
+        .stm-btn.load { background:#166534; color:#4ade80; }
+        .stm-btn.del  { background:#7f1d1d; color:#fca5a5; }
+
+        /* ── EDITOR INLINE (panel derecho) ────────────────── */
+        .editor-inline { display:none; max-height:calc(100vh - 52px - 110px); }
+        .editor-inline.visible { display:flex; flex-direction:column; gap:0; overflow:hidden; }
+
+        .ei-header { display:flex; align-items:center; gap:12px; padding:14px 16px;
+            background:linear-gradient(90deg,var(--theme-panel),var(--theme-accent-dark),var(--theme-panel));
+            border-bottom:2px solid var(--theme-border); flex-shrink:0; }
+        .ei-sprite { width:56px; height:56px; object-fit:contain; image-rendering:pixelated;
+            filter:drop-shadow(0 4px 8px rgba(0,0,0,.6)); }
+        .ei-name  { font-size: 13px; margin-bottom:4px; }
+        .ei-types { display:flex; gap:4px; margin-bottom:3px; }
+        .ei-ability-text { font-size: 12px; color:#a5b4fc; }
+        .ei-close { margin-left:auto; background:transparent; border:1px solid #374151;
+            color:#64748b; padding:4px 9px; border-radius:4px; cursor:pointer;
+            font-family:'Courier New',Courier,monospace; font-size: 12px; transition:all .15s; }
+        .ei-close:hover { border-color:#ef4444; color:#ef4444; }
+
+        .ei-tabs { display:flex; background:var(--theme-bg-darker); border-bottom:2px solid var(--theme-border); flex-shrink:0; }
+        .ei-tab { flex:1; padding:8px 4px; background:transparent; border:none;
+            border-bottom:3px solid transparent; color:var(--theme-text-muted);
+            font-family:'Courier New',Courier,monospace; font-size: 12px; cursor:pointer; transition:all .15s; }
+        .ei-tab:hover { color:#94a3b8; }
+        .ei-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+
+        .ei-body { flex:1; overflow-y:auto; padding:14px 16px; min-height:0; }
+        .ei-footer { padding:10px 16px; border-top:2px solid var(--theme-border); background:var(--theme-bg-darker); flex-shrink:0; }
+        .ei-save-btn { width:100%; padding:8px;
+            background:linear-gradient(135deg,#f59e0b,#d97706); border:none; border-radius:5px;
+            color:#0a0a0a; font-family:'Courier New',Courier,monospace; font-size: 12px;
+            cursor:pointer; transition:all .15s; }
+        .ei-save-btn:hover { filter:brightness(1.1); }
+
+        /* nivel badge en el team-editor-bar */
+        .level-selector { display:flex; align-items:center; gap:6px; font-size: 8.5px; color:#64748b; margin-left:auto; }
+        .level-input { background:var(--theme-input); border:1px solid var(--theme-border-light); color:var(--gold);
+            font-family:'Courier New',Courier,monospace; font-size: 13px; padding:3px 6px;
+            border-radius:3px; width:52px; text-align:center; }
+
+        /* ── BUSCADOR DE POKÉMON ─────────────────────────────────── */
+        .search-bar { padding:8px 14px 0 14px; border-bottom:none; }
+        .search-input { width:100%; background:var(--theme-input); border:1px solid var(--theme-border-light);
+            color:#e2e8f0; font-family:'Courier New',Courier,monospace; font-size:13px;
+            padding:7px 11px; border-radius:5px; outline:none; margin-bottom:8px; font-weight:500; }
+        .search-input::placeholder { color:#334155; }
+        .search-input:focus { border-color:var(--gold); }
+        
+        /* Filtros */
+        .filter-section { padding:8px 14px; border-bottom:1px solid #1e293b; display:flex; flex-direction:column; gap:8px; }
+        .filter-row { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+        .filter-label { font-size:9px; color:#9ca3af; min-width:40px; font-weight:600; }
+        .filter-select { background:var(--theme-input); border:1px solid var(--theme-border-light); color:#e2e8f0;
+            font-family:'Courier New',Courier,monospace; font-size:12px; padding:5px 8px;
+            border-radius:4px; outline:none; max-width:120px; cursor:pointer; font-weight:500; }
+        .filter-select:focus { border-color:var(--gold); color:#fbbf24; }
+        .filter-btn { background:#1e293b; border:1px solid #334155; color:#cbd5e1;
+            font-family:'Courier New',Courier,monospace; font-size:12px; padding:5px 9px;
+            border-radius:4px; cursor:pointer; transition:all .15s; font-weight:500; }
+        .filter-btn:hover { border-color:#475569; color:white; }
+        .filter-btn.active { background:var(--gold); color:#1a1a2e; border-color:var(--gold); font-weight:bold; }
+        .search-results-count { font-size:10px; color:#94a3af; margin-top:4px; font-weight:500; }
+
+        /* Selector de tema en header */
+        .theme-selector { display:flex; gap:3px; height:32px; background:rgba(255,255,255,.03); border-radius:4px; padding:0 6px; align-items:center; border:1px solid rgba(251,191,36,.2); margin-right:12px; }
+        .theme-btn { background:transparent; border:none; cursor:pointer; font-size:14px; padding:0 4px; transition:all .15s; opacity:.6; }
+        .theme-btn:hover { opacity:1; transform:scale(1.2); }
+        .theme-btn.active { opacity:1; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-title">⚔️ CONSTRUCTOR DE EQUIPO</div>
+    <div style="display:flex;gap:6px;align-items:center;">
+        <div class="theme-selector">
+            <button onclick="setTheme('default')" class="theme-btn active" id="tb-theme-default" title="Clásico">⚪</button>
+            <button onclick="setTheme('etherdiel')" class="theme-btn" id="tb-theme-etherdiel" title="Etherdiel">✨</button>
+            <button onclick="setTheme('helodian')" class="theme-btn" id="tb-theme-helodian" title="Helodian">🔥</button>
+        </div>
+        <a href="calculator.html" class="nav-btn">🧮 CALC</a><a href="index.html" class="nav-btn">◀ MENÚ</a>
+    </div>
+</div>
+
+<div class="layout">
+
+    <!-- ── COL IZQUIERDA: equipo + acciones + dex ─────────────────── -->
+    <div class="left-panel">
+
+        <div class="team-section">
+            <div class="section-title">TU EQUIPO <span style="color:#334155;font-size:6px;">— clic para editar</span></div>
+            <div class="team-slots" id="teamSlots"></div>
+            <div class="team-meta">
+                <span>Seleccionados: <span id="teamCount">0</span>/6</span>
+                <span id="minWarning"></span>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="action-btn btn-battle" onclick="goToBattle()" id="battleBtn" disabled>⚔️ BATALLA LIBRE</button>
+            <div class="btn-row">
+                <button class="action-btn btn-trainer" onclick="showPanel('trainer')">🎖️ ENTRENADORES</button>
+                <button class="action-btn btn-wild"    onclick="showPanel('wild')">🎲 SALVAJE</button>
+            </div>
+            <div class="btn-row">
+                <button class="action-btn btn-save" onclick="saveTeam()">💾 GUARDAR</button>
+                <button class="action-btn btn-load" onclick="openSavedTeamsModal()">📂 MIS EQUIPOS</button>
+            </div>
+            <div id="savedStatus"></div>
+        </div>
+
+        <div class="available-section">
+            <div class="section-title">POKÉMON DISPONIBLES</div>
+            <div class="search-bar">
+                <input class="search-input" type="text" id="pokeSearch"
+                    placeholder="🔍 Buscar por nombre o ID..."
+                    oninput="filterPokemon()">
+            </div>
+            <div class="filter-section">
+                <div class="filter-row">
+                    <label class="filter-label">Tipo:</label>
+                    <select class="filter-select" id="typeFilter" onchange="filterPokemon()">
+                        <option value="">Todos</option>
+                        <option value="FUEGO">🔥 Fuego</option>
+                        <option value="AGUA">💧 Agua</option>
+                        <option value="PLANTA">🌿 Planta</option>
+                        <option value="ELÉCTRICO">⚡ Eléctrico</option>
+                        <option value="HIELO">❄️ Hielo</option>
+                        <option value="LUCHA">👊 Lucha</option>
+                        <option value="VENENO">☠️ Veneno</option>
+                        <option value="TIERRA">🪨 Tierra</option>
+                        <option value="VOLADOR">🕊️ Volador</option>
+                        <option value="PSÍQUICO">🧠 Psíquico</option>
+                        <option value="BICHO">🐛 Bicho</option>
+                        <option value="ROCA">🗿 Roca</option>
+                        <option value="FANTASMA">👻 Fantasma</option>
+                        <option value="DRAGÓN">🐉 Dragón</option>
+                        <option value="SINIESTRO">🌙 Siniestro</option>
+                        <option value="ACERO">⚙️ Acero</option>
+                        <option value="HADA">✨ Hada</option>
+                        <option value="NORMAL">◯ Normal</option>
+                    </select>
+                </div>
+                <div class="filter-row">
+                    <label class="filter-label">Orden:</label>
+                    <select class="filter-select" id="sortFilter" onchange="filterPokemon()" style="max-width:140px;">
+                        <option value="id">ID (↑)</option>
+                        <option value="name">Nombre (A-Z)</option>
+                        <option value="atk">Ataque (↓)</option>
+                        <option value="def">Defensa (↓)</option>
+                        <option value="spa">Atq. Esp (↓)</option>
+                        <option value="spd">Def. Esp (↓)</option>
+                        <option value="spe">Velocidad (↓)</option>
+                        <option value="total">Total Stats (↓)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="search-results-count" id="searchCount"></div>
+            <div class="pokemon-grid" id="pokemonGrid"></div>
+        </div>
+    </div>
+
+    <!-- ── COL DERECHA: editor inline + modos ───────────────────── -->
+    <div class="right-panel" id="rightPanel" style="display:flex;flex-direction:column;overflow:hidden;padding:0;">
+
+        <!-- Barra superior con selector de Pokémon + nivel -->
+        <div class="team-editor-bar" id="teamEditorBar" style="padding:10px 14px;border-bottom:1px solid #1e293b;flex-shrink:0;">
+            <div class="teb-title">✏️ SELECCIONA UN POKÉMON PARA EDITAR</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                <div class="teb-slots" id="tebSlots"></div>
+                <div class="level-selector">
+                    Lvl <input class="level-input" type="number" id="levelInput" value="100" min="1" max="100"
+                               onchange="onLevelChange(this.value)">
+                </div>
+            </div>
+        </div>
+
+        <!-- Editor inline -->
+        <div class="editor-inline" id="editorInline">
+            <div class="ei-header">
+                <img class="ei-sprite" id="eiSprite" src="">
+                <div>
+                    <div class="ei-name" id="eiName">─</div>
+                    <div class="ei-types" id="eiTypes"></div>
+                    <div class="ei-ability-text" id="eiAbility"></div>
+                </div>
+                <button class="ei-close" onclick="closeEditor()">✕</button>
+            </div>
+            <div class="ei-tabs">
+                <button class="ei-tab"         id="tab-summary" onclick="switchTab('summary')">📋 Info</button>
+                <button class="ei-tab active"  id="tab-moves"   onclick="switchTab('moves')">⚔️ Movs</button>
+                <button class="ei-tab"         id="tab-nature"  onclick="switchTab('nature')">🌿 Nat+EVs</button>
+                <button class="ei-tab"         id="tab-ability" onclick="switchTab('ability')">✨ Hab</button>
+                <button class="ei-tab"         id="tab-item"    onclick="switchTab('item')">🎒 Objeto</button>
+            </div>
+            <div class="ei-body" id="eiBody"></div>
+            <div class="ei-footer">
+                <button class="ei-save-btn" onclick="saveEditorChanges()">✅ GUARDAR CAMBIOS</button>
+            </div>
+        </div>
+
+        <!-- Paneles de modo (entrenadores / salvaje / placeholder) -->
+        <div id="modePanels" style="flex:1;overflow-y:auto;padding:1.5rem;display:flex;flex-direction:column;gap:14px;">
+
+            <!-- Entrenadores -->
+            <div class="trainer-select-panel" id="trainerPanel">
+                <div class="section-title" style="margin-bottom:12px;">🎖️ ELIGE ENTRENADOR RIVAL</div>
+                <div class="trainer-grid" id="trainerGrid"></div>
+            </div>
+
+            <!-- Salvaje -->
+            <div class="wild-select-panel" id="wildPanel">
+                <div class="section-title" style="margin-bottom:12px;">🎲 MODO POKÉMON SALVAJE <span style="font-size:6px;color:#64748b;">(ambos equipos aleatorios)</span></div>
+                <div class="wild-grid">
+                    <div class="wild-card" onclick="goToWild('normal')">
+                        <div class="wild-icon">🌿</div>
+                        <div><div class="wc-title">NORMAL</div><div class="wc-desc">EVs modestos, objetos básicos. Tú y el rival tienen equipos aleatorios justos.</div></div>
+                    </div>
+                    <div class="wild-card" onclick="goToWild('hard')">
+                        <div class="wild-icon">🔥</div>
+                        <div><div class="wc-title">DIFÍCIL</div><div class="wc-desc">EVs optimizados, objetos competitivos. Prepárate para sufrir.</div></div>
+                    </div>
+                    <div class="wild-card" onclick="goToWild('chaos')">
+                        <div class="wild-icon">💀</div>
+                        <div><div class="wc-title">CAOS TOTAL</div><div class="wc-desc">Stats exageradas, combos locos. ¡Buena suerte!</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Placeholder -->
+            <div class="right-placeholder" id="rightPlaceholder" style="flex:1;">
+                <div class="ph-icon">🎮</div>
+                <div class="ph-text">Añade Pokémon a tu equipo<br>y haz clic en ellos para editar</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ MODAL MIS EQUIPOS ═════════════════════════════════════════════ -->
+<div class="editor-modal" id="savedTeamsModal">
+    <div class="editor-modal-box" style="max-width:560px;">
+        <div class="em-header">
+            <div class="em-header-left">
+                <div style="font-size:28px;margin-right:4px;">📂</div>
+                <div class="em-header-name">MIS EQUIPOS GUARDADOS</div>
+            </div>
+            <button class="em-close-btn" onclick="closeSavedTeamsModal()">✕</button>
+        </div>
+        <div class="em-body" style="padding:14px;">
+            <div id="savedTeamsList"></div>
+        </div>
+    </div>
+</div>
+
+<script src="data/types.js"></script>
+<script src="data/status.js"></script>
+<script src="data/moves.js"></script>
+<script src="data/items.js"></script>
+<script src="data/natures.js"></script>
+<script src="data/abilities.js"></script>
+<script src="data/sprites.js"></script>  <!-- Sprites personalizados en Base64 (sin internet) -->
+<script src="data/pokemon.js"></script>
+<script src="data/trainers.js"></script>
+<script src="js/team-builder-main.js"></script>
+<script>
+    // Cargar tema legendario guardado
+    const THEMES = {
+        default: {
+            bg: '#0a0a1a',
+            'bg-darker': '#060612',
+            panel: '#0f172a',
+            border: '#1e293b',
+            'border-light': '#334155',
+            gold: '#fbbf24',
+            'accent-dark': '#1e1b4b',
+            input: '#111827',
+            'text-muted': '#475569',
+            'text-light': '#cbd5e1',
+            'text-lighter': '#9ca3af',
+            text: '#e2e8f0',
+            'text-dark': '#1a1a2e'
+        },
+        etherdiel: {
+            bg: '#f0f0f0',
+            'bg-darker': '#e0e7ff',
+            panel: '#e3f2fd',
+            border: '#1e88e5',
+            'border-light': '#1565c0',
+            gold: '#1e88e5',
+            'accent-dark': '#0d47a1',
+            input: '#bbdefb',
+            'text-muted': '#1565c0',
+            'text-light': '#0d47a1',
+            'text-lighter': '#1976d2',
+            text: '#000000',
+            'text-dark': '#000000'
+        },
+        helodian: {
+            bg: '#0a0a0a',
+            'bg-darker': '#1a0a0a',
+            panel: '#2a0a0a',
+            border: '#c62828',
+            'border-light': '#b71c1c',
+            gold: '#e53935',
+            'accent-dark': '#7f0000',
+            input: '#4a0a0a',
+            'text-muted': '#ff5252',
+            'text-light': '#ff6e40',
+            'text-lighter': '#ff7043',
+            text: '#e2e8f0',
+            'text-dark': '#1a1a2e'
+        }
+    };
+
+    function applyTheme(themeName) {
+        const theme = THEMES[themeName] || THEMES.default;
+        document.documentElement.style.setProperty('--theme-bg', theme.bg);
+        document.documentElement.style.setProperty('--theme-bg-darker', theme['bg-darker']);
+        document.documentElement.style.setProperty('--theme-panel', theme.panel);
+        document.documentElement.style.setProperty('--theme-border', theme.border);
+        document.documentElement.style.setProperty('--theme-border-light', theme['border-light']);
+        document.documentElement.style.setProperty('--theme-gold', theme.gold);
+        document.documentElement.style.setProperty('--theme-accent-dark', theme['accent-dark']);
+        document.documentElement.style.setProperty('--theme-input', theme.input);
+        document.documentElement.style.setProperty('--theme-text-muted', theme['text-muted']);
+        document.documentElement.style.setProperty('--theme-text-light', theme['text-light']);
+        document.documentElement.style.setProperty('--theme-text-lighter', theme['text-lighter']);
+        document.documentElement.style.setProperty('--theme-text', theme.text);
+        document.documentElement.style.setProperty('--theme-text-dark', theme['text-dark']);
+        
+        // Actualizar botones de tema
+        document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
+        const activeBtn = document.getElementById('tb-theme-' + themeName);
+        if (activeBtn) activeBtn.classList.add('active');
+    }
+
+    function setTheme(themeName) {
+        localStorage.setItem('legendaryTheme', themeName);
+        applyTheme(themeName);
+    }
+
+    function loadTheme() {
+        const saved = localStorage.getItem('legendaryTheme') || 'default';
+        applyTheme(saved);
+    }
+
+    loadTheme();
+</script>
+</body>
+</html>
