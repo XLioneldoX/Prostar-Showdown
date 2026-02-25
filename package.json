@@ -1,0 +1,17 @@
+{
+  "name": "prostar-showdown",
+  "version": "1.0.0",
+  "description": "Juego de combate por turnos multijugador",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node server/server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.14.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
