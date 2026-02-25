@@ -7,10 +7,10 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
 let trainingPokeIndex = 0;   // Índice del Pokémon activo en training
-let dummyCurrentHp    = 1000;
-let dummyInfiniteHp   = false;
-let trainingTotalDmg  = 0;
-let trainingHits      = 0;
+let dummyCurrentHp = 1000;
+let dummyInfiniteHp = false;
+let trainingTotalDmg = 0;
+let trainingHits = 0;
 
 // ─── ABRIR / CERRAR ──────────────────────────────────────────────────────────
 function openTrainingMode() {
@@ -33,7 +33,7 @@ function renderTrainerPokeRow() {
     if (!row) return;
     row.innerHTML = playerTeam.map((p, i) => {
         const sprite = getSpriteUrl(p.id, 'front');
-        const faded  = p.fainted ? 'style="opacity:.3"' : '';
+        const faded = p.fainted ? 'style="opacity:.3"' : '';
         return `
             <div class="trainer-poke-btn ${i === trainingPokeIndex ? 'active' : ''}"
                  onclick="selectTrainingPoke(${i})" ${faded}>
@@ -59,13 +59,13 @@ function renderTrainingMoves() {
     if (!grid) return;
     const pokemon = playerTeam[trainingPokeIndex];
     grid.innerHTML = pokemon.moves.map((moveName, idx) => {
-        const move      = getMoveInfo(moveName);
-        const typeClass = `mv-${move.type.replace(/[ÉÍÓÚ]/g, c => ({'É':'E','Í':'I','Ó':'O','Ú':'U'}[c]))}`;
-        const cat       = move.category === 'physical' ? 'FÍS' : move.category === 'status' ? 'EST' : 'ESP';
+        const move = getMoveInfo(moveName);
+        const typeClass = `mv-${move.type.replace(/[ÉÍÓÚ]/g, c => ({ 'É': 'E', 'Í': 'I', 'Ó': 'O', 'Ú': 'U' }[c]))}`;
+        const cat = move.category === 'physical' ? 'FÍS' : move.category === 'status' ? 'EST' : 'ESP';
         return `
             <button class="training-move-btn ${typeClass}" onclick="trainingAttack(${idx})">
                 <div style="font-size:8px;font-weight:bold;margin-bottom:2px;">${moveName}</div>
-                <div style="font-size:6px;opacity:0.7;">${move.type} • ${cat} • POW:${move.power||'─'}</div>
+                <div style="font-size:6px;opacity:0.7;">${move.type} • ${cat} • POW:${move.power || '─'}</div>
                 ${move.description ? `<div style="font-size:5.5px;opacity:0.5;margin-top:2px;">${move.description}</div>` : ''}
             </button>
         `;
@@ -74,9 +74,9 @@ function renderTrainingMoves() {
 
 // ─── ATAQUE AL SACO ───────────────────────────────────────────────────────────
 function trainingAttack(moveIndex) {
-    const attacker  = playerTeam[trainingPokeIndex];
-    const moveName  = attacker.moves[moveIndex];
-    const move      = getMoveInfo(moveName);
+    const attacker = playerTeam[trainingPokeIndex];
+    const moveName = attacker.moves[moveIndex];
+    const move = getMoveInfo(moveName);
 
     // Construir un saco ficticio con los valores de los inputs
     const dummyTypes = [
@@ -88,17 +88,17 @@ function trainingAttack(moveIndex) {
     const dummySpdStat = parseInt(document.getElementById('dummySpd').value) || 80;
 
     const dummy = {
-        name:       'Saco',
-        types:      dummyTypes,
-        stats:      { hp: parseInt(document.getElementById('dummyMaxHp').value) || 1000, def: dummyDefStat, spd: dummySpdStat },
-        currentHp:  dummyCurrentHp,
-        item:       'Ninguno',
-        itemUsed:   false,
-        nature:     'Seria',
-        ability:    null,
-        status:     null,
-        statBoosts: { atk:0, def:0, spa:0, spd:0, spe:0 },
-        fainted:    false,
+        name: 'Saco',
+        types: dummyTypes,
+        stats: { hp: parseInt(document.getElementById('dummyMaxHp').value) || 1000, def: dummyDefStat, spd: dummySpdStat },
+        currentHp: dummyCurrentHp,
+        item: 'Ninguno',
+        itemUsed: false,
+        nature: 'Seria',
+        ability: null,
+        status: null,
+        statBoosts: { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+        fainted: false,
     };
 
     // Movimiento de estado: no hace daño
@@ -114,9 +114,9 @@ function trainingAttack(moveIndex) {
 
     // Calcular daño con la misma fórmula del combate
     const isPhysical = move.category === 'physical';
-    const aStats     = getModifiedStats(attacker);
-    const atk        = isPhysical ? aStats.atk : aStats.spa;
-    const def        = isPhysical ? dummyDefStat : dummySpdStat;
+    const aStats = getModifiedStats(attacker);
+    const atk = isPhysical ? aStats.atk : aStats.spa;
+    const def = isPhysical ? dummyDefStat : dummySpdStat;
 
     // Base damage
     let baseDmg = ((2 * 100 / 5 + 2) * move.power * (atk / def)) / 50 + 2;
@@ -130,10 +130,10 @@ function trainingAttack(moveIndex) {
     let abilityMult = 1;
     if (atkAb?.trigger === 'on_attack') {
         if (atkAb.effect === 'boost_type_atk' && move.type === atkAb.boostedType) abilityMult = atkAb.value;
-        if (atkAb.effect === 'crit_boost')      abilityMult = atkAb.value;
+        if (atkAb.effect === 'crit_boost') abilityMult = atkAb.value;
         if (atkAb.effect === 'boost_contact_moves' && isPhysical) abilityMult = atkAb.value;
         if (atkAb.effect === 'boost_type_low_hp' && move.type === atkAb.boostedType) {
-            if ((attacker.currentHp / attacker.stats.hp) <= (atkAb.threshold||0.33)) abilityMult = atkAb.value;
+            if ((attacker.currentHp / attacker.stats.hp) <= (atkAb.threshold || 0.33)) abilityMult = atkAb.value;
         }
         if (atkAb.effect === 'brute_force') abilityMult = atkAb.value;
     }
@@ -145,7 +145,7 @@ function trainingAttack(moveIndex) {
     const minDmg = Math.max(1, Math.floor(baseDmg * stab * effectiveness * abilityMult * burnMult * getItemTypeBoost(attacker, move.type) * 0.85));
     const maxDmg = Math.max(1, Math.floor(baseDmg * stab * effectiveness * abilityMult * burnMult * getItemTypeBoost(attacker, move.type) * 1.00));
     // Daño real con factor aleatorio
-    const realDmg = Math.max(1, Math.floor(baseDmg * stab * effectiveness * abilityMult * burnMult * getItemTypeBoost(attacker, move.type) * (0.85 + Math.random() * 0.15)));
+    const realDmg = Math.max(1, Math.floor(baseDmg * stab * effectiveness * abilityMult * burnMult * getItemTypeBoost(attacker, move.type) * (0.85 + BattleRNG.random() * 0.15)));
 
     // Aplicar al saco
     if (!dummyInfiniteHp) {
@@ -173,8 +173,8 @@ function trainingAttack(moveIndex) {
     if (effStr) tLog(`   Efectividad: ${effStr}`, effClass);
     tLog(`   Daño real: ${realDmg} HP (${hpPct}% del saco)`, 'tlog-damage');
     tLog(`   Rango: ${minDmg}–${maxDmg} HP`, 'tlog-entry');
-    tLog(`   [ATK:${atk} vs DEF:${def} · POW:${move.power} · STAB:${stab>1?'Sí':'No'} · AB:${abilityMult}x]`, 'tlog-entry');
-    tLog(`   Acumulado: ${trainingTotalDmg} dmg en ${trainingHits} golpe${trainingHits!==1?'s':''}`, 'tlog-entry');
+    tLog(`   [ATK:${atk} vs DEF:${def} · POW:${move.power} · STAB:${stab > 1 ? 'Sí' : 'No'} · AB:${abilityMult}x]`, 'tlog-entry');
+    tLog(`   Acumulado: ${trainingTotalDmg} dmg en ${trainingHits} golpe${trainingHits !== 1 ? 's' : ''}`, 'tlog-entry');
 
     if (dummyCurrentHp <= 0 && !dummyInfiniteHp) {
         tLog(`🏆 ¡SACO DESTRUIDO en ${trainingHits} golpes!`, 'tlog-super');
@@ -183,22 +183,22 @@ function trainingAttack(moveIndex) {
 
 // ─── HP BAR DEL SACO ─────────────────────────────────────────────────────────
 function updateDummyHpBar() {
-    const maxHp  = parseInt(document.getElementById('dummyMaxHp').value) || 1000;
-    const pct    = Math.max(0, (dummyCurrentHp / maxHp) * 100);
-    const fill   = document.getElementById('dummyHpFill');
-    const label  = document.getElementById('dummyHpLabel');
-    if (fill)  {
+    const maxHp = parseInt(document.getElementById('dummyMaxHp').value) || 1000;
+    const pct = Math.max(0, (dummyCurrentHp / maxHp) * 100);
+    const fill = document.getElementById('dummyHpFill');
+    const label = document.getElementById('dummyHpLabel');
+    if (fill) {
         fill.style.width = pct + '%';
-        fill.className   = 'dummy-hp-fill' + (pct < 25 ? ' low' : '');
+        fill.className = 'dummy-hp-fill' + (pct < 25 ? ' low' : '');
     }
     if (label) label.textContent = `${Math.max(0, Math.floor(dummyCurrentHp))} / ${maxHp} HP`;
 }
 
 function resetDummy() {
-    const maxHp    = parseInt(document.getElementById('dummyMaxHp').value) || 1000;
+    const maxHp = parseInt(document.getElementById('dummyMaxHp').value) || 1000;
     dummyCurrentHp = maxHp;
     trainingTotalDmg = 0;
-    trainingHits     = 0;
+    trainingHits = 0;
     updateDummyHpBar();
 }
 
@@ -207,7 +207,7 @@ function toggleInfiniteHp() {
     const btn = document.getElementById('infiniteToggle');
     if (btn) {
         btn.textContent = `∞ HP infinito: ${dummyInfiniteHp ? 'ON' : 'OFF'}`;
-        btn.className   = 'dummy-infinite-toggle' + (dummyInfiniteHp ? ' on' : '');
+        btn.className = 'dummy-infinite-toggle' + (dummyInfiniteHp ? ' on' : '');
     }
     if (dummyInfiniteHp) resetDummy();
 }
@@ -223,15 +223,15 @@ function punchDummy() {
 // ─── POPUP DE DAÑO ───────────────────────────────────────────────────────────
 function showDamagePopup(dmg, effectiveness) {
     const el = document.createElement('div');
-    el.className   = 'damage-popup';
+    el.className = 'damage-popup';
     el.textContent = (effectiveness > 1 ? '💥 ' : '') + '-' + dmg;
     el.style.color = effectiveness > 1 ? '#86efac' : effectiveness < 1 ? '#94a3b8' : '#fbbf24';
 
     // Posición cerca del saco
     const dummyEl = document.getElementById('dummySprite');
-    const rect    = dummyEl ? dummyEl.getBoundingClientRect() : { left: 200, top: 300 };
+    const rect = dummyEl ? dummyEl.getBoundingClientRect() : { left: 200, top: 300 };
     el.style.left = (rect.left + 20 + Math.random() * 30) + 'px';
-    el.style.top  = (rect.top  - 10) + 'px';
+    el.style.top = (rect.top - 10) + 'px';
 
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 950);
@@ -242,11 +242,11 @@ function tLog(msg, className = 'tlog-entry') {
     const log = document.getElementById('trainingLog');
     if (!log) return;
     const el = document.createElement('div');
-    el.className   = className;
+    el.className = className;
     el.textContent = msg;
     log.appendChild(el);
-    log.scrollTop  = log.scrollHeight;
-    const entries  = log.querySelectorAll('div');
+    log.scrollTop = log.scrollHeight;
+    const entries = log.querySelectorAll('div');
     if (entries.length > 80) entries[0].remove();
 }
 
@@ -254,5 +254,5 @@ function clearTrainingLog() {
     const log = document.getElementById('trainingLog');
     if (log) log.innerHTML = '';
     trainingTotalDmg = 0;
-    trainingHits     = 0;
+    trainingHits = 0;
 }

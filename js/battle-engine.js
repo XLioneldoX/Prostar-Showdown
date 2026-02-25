@@ -248,6 +248,26 @@ function whoGoesFirst(playerMove, enemyMove) {
     return pS > eS ? 'player' : 'enemy';
 }
 
+// ─── GENERADOR DE NÚMEROS ALEATORIOS DETERMINISTA (PRNG) ────────────────────
+window.BattleRNG = {
+    seed: Math.floor(Math.random() * 2147483647),
+    setSeed(s) {
+        if (typeof s === 'string') {
+            let hash = 0;
+            for (let i = 0; i < s.length; i++) hash = (Math.imul(31, hash) + s.charCodeAt(i)) | 0;
+            this.seed = hash > 0 ? hash : -hash || 1;
+        } else {
+            this.seed = s || 123456789;
+        }
+    },
+    // Retorna un float entre 0 (incluido) y 1 (excluido)
+    random() {
+        if (!this.seed || isNaN(this.seed)) this.seed = Math.floor(Math.random() * 2147483647);
+        this.seed = (this.seed * 16807) % 2147483647;
+        return (this.seed - 1) / 2147483646;
+    }
+};
+
 // ─── IA ENEMIGA ───────────────────────────────────────────────────────────────
 function chooseEnemyMove(attacker, defender) {
     if (BattleRNG.random() < 0.7) {
