@@ -1,4 +1,12 @@
 // ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  js/battle-engine.js  —  MOTOR DE CÁLCULOS                              ║
+// ║                                                                          ║
+// ║  FÓRMULA OFICIAL STATS (Gen 3+):                                         ║
+// ║   HP  = floor((2*Base + IV + floor(EV/4)) * Nivel / 100) + Nivel + 10   ║
+// ║   Stat = floor(floor((2*Base + IV + floor(EV/4)) * Nivel / 100) + 5)    ║
+// ║          * Naturaleza                                                    ║
+// ║                                                                          ║
+// ║  FÓRMULA OFICIAL DAÑO (Gen 5+):                                          ║
 // ║   Dmg = floor(floor(floor(2*Lvl/5+2) * Pow * A/D) / 50 + 2) * Mods     ║
 // ║                                                                          ║
 // ║  IVs: 31 por defecto (máximo) para todos los Pokémon                    ║
@@ -172,7 +180,7 @@ function calculateDamage(attacker, defender, moveName) {
         dmg *= 0.5;
 
     // ── Factor aleatorio (85–100%) ────────────────────────────────────────
-    dmg *= (0.85 + BattleRNG.random() * 0.15);
+    dmg *= (0.85 + Math.random() * 0.15);
 
     return Math.max(1, Math.floor(dmg));
 }
@@ -214,7 +222,7 @@ function applyAbilityOnHit(defender, attacker, isPhysical, effectiveness, logFn)
     switch (ab.effect) {
         case 'retaliate_status':
             if (ab.physicalOnly && !isPhysical) break;
-            if (!attacker.status && BattleRNG.random() * 100 < ab.value) {
+            if (!attacker.status && Math.random() * 100 < ab.value) {
                 attacker.status = ab.status;
                 const sd = StatusDB[ab.status];
                 logFn(`${ab.icon} ${ab.name}: ${sd?.applyMsg?.replace('{pokemon}', attacker.name) || attacker.name + ' fue afectado'}`, 'boost');
@@ -244,33 +252,20 @@ function whoGoesFirst(playerMove, enemyMove) {
     if (pP !== eP) return pP > eP ? 'player' : 'enemy';
     const pS = getEffectiveSpe(playerTeam[playerActive]);
     const eS = getEffectiveSpe(enemyTeam[enemyActive]);
-    if (pS === eS) return BattleRNG.random() < 0.5 ? 'player' : 'enemy';
+    if (pS === eS) {
+        const rand = Math.random();
+        if (typeof MP !== 'undefined' && MP.active) {
+            const absoluteWinner = rand < 0.5 ? 0 : 1;
+            return absoluteWinner === MP.playerIdx ? 'player' : 'enemy';
+        }
+        return rand < 0.5 ? 'player' : 'enemy';
+    }
     return pS > eS ? 'player' : 'enemy';
 }
 
-// ─── GENERADOR DE NÚMEROS ALEATORIOS DETERMINISTA (PRNG) ────────────────────
-window.BattleRNG = {
-    seed: Math.floor(Math.random() * 2147483647),
-    setSeed(s) {
-        if (typeof s === 'string') {
-            let hash = 0;
-            for (let i = 0; i < s.length; i++) hash = (Math.imul(31, hash) + s.charCodeAt(i)) | 0;
-            this.seed = hash > 0 ? hash : -hash || 1;
-        } else {
-            this.seed = s || 123456789;
-        }
-    },
-    // Retorna un float entre 0 (incluido) y 1 (excluido)
-    random() {
-        if (!this.seed || isNaN(this.seed)) this.seed = Math.floor(Math.random() * 2147483647);
-        this.seed = (this.seed * 16807) % 2147483647;
-        return (this.seed - 1) / 2147483646;
-    }
-};
-
 // ─── IA ENEMIGA ───────────────────────────────────────────────────────────────
 function chooseEnemyMove(attacker, defender) {
-    if (BattleRNG.random() < 0.7) {
+    if (Math.random() < 0.7) {
         let best = 0, bestScore = -1;
         attacker.moves.forEach((mv, i) => {
             const move = getMoveInfo(mv);
@@ -280,7 +275,7 @@ function chooseEnemyMove(attacker, defender) {
         });
         return best;
     }
-    return Math.floor(BattleRNG.random() * attacker.moves.length);
+    return Math.floor(Math.random() * attacker.moves.length);
 }
 
 // ─── ESTADOS AL FINAL DEL TURNO ──────────────────────────────────────────────

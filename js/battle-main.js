@@ -21,16 +21,13 @@ function init() {
     const params = new URLSearchParams(window.location.search);
     battleLevel = Math.min(100, Math.max(1, parseInt(params.get('level') || '100')));
 
-    // ─ MODO MULTIJUGADOR: dejar que multiplayer.js tome el control ───────────
-    // multiplayer.js ya escucha DOMContentLoaded y llama MP.init()
-    // Cuando el servidor manda 'battle_start', MP llama startMPBattle()
-    // que construye los equipos y llama startBattle() aquí.
+    // ── MODO MULTIJUGADOR: no iniciar batalla normal, esperar al servidor ────
     if (params.has('mp')) {
-        battleMode = 'online';
-        // Ocultar el layout hasta que el servidor confirme la batalla
-        const layout = document.querySelector('.battle-layout');
-        if (layout) layout.style.display = 'none';
-        return; // El resto lo gestiona multiplayer.js
+        const loadResult = loadPlayerTeam(params);
+        if (loadResult !== 'OK') {
+            showError(loadResult, 'Ve al constructor y arma tu equipo para jugar online.');
+        }
+        return;
     }
 
     const trainerId = params.get('trainer');
@@ -54,6 +51,19 @@ function init() {
     }
 
     // ─ Modo trainer/libre: leer equipo del jugador ───────────────────────────
+    const loadResult = loadPlayerTeam(params);
+    if (loadResult !== 'OK') {
+        if (loadResult === 'NO HAY EQUIPO') showError(loadResult, 'Ve al constructor y arma tu equipo.');
+        else if (loadResult === 'ERROR DE DATOS') showError(loadResult, 'Datos corruptos. Ve al constructor.');
+        else if (loadResult === 'EQUIPO VACÍO') showError(loadResult, 'Añade al menos 3 Pokémon.');
+        else if (loadResult === 'POKÉMON NO ENCONTRADOS') showError(loadResult, 'Reconstruye el equipo.');
+        return;
+    }
+
+    buildPlayerBattle();
+}
+
+function loadPlayerTeam(params) {
     let rawData = null;
     try {
         const tp = params.get('team');
@@ -66,24 +76,23 @@ function init() {
     if (!rawData) try { rawData = sessionStorage.getItem('kantoTeam'); } catch (e) { }
     if (!rawData) try { rawData = localStorage.getItem('kantoTeam') || localStorage.getItem('savedTeam'); } catch (e) { }
 
-    if (!rawData) { showError('NO HAY EQUIPO', 'Ve al constructor y arma tu equipo.'); return; }
+    if (!rawData) return 'NO HAY EQUIPO';
 
     let parsed;
     try { parsed = JSON.parse(rawData); }
-    catch (e) { showError('ERROR DE DATOS', 'Datos corruptos. Ve al constructor.'); return; }
+    catch (e) { return 'ERROR DE DATOS'; }
 
-    if (!Array.isArray(parsed) || !parsed.length) { showError('EQUIPO VACÍO', 'Añade al menos 3 Pokémon.'); return; }
+    if (!Array.isArray(parsed) || !parsed.length) return 'EQUIPO VACÍO';
 
     playerTeamRaw = parsed.filter(e => PokemonDB[e.id]);
-    if (!playerTeamRaw.length) { showError('POKÉMON NO ENCONTRADOS', 'Reconstruye el equipo.'); return; }
+    if (!playerTeamRaw.length) return 'POKÉMON NO ENCONTRADOS';
 
-    buildPlayerBattle();
+    playerTeam = playerTeamRaw.map(e => makePokemon(PokemonDB[e.id], e, battleLevel));
+    return 'OK';
 }
 
 // ─── CONSTRUIR BATALLA CON EQUIPO DEL JUGADOR ─────────────────────────────────
 function buildPlayerBattle() {
-    playerTeam = playerTeamRaw.map(e => makePokemon(PokemonDB[e.id], e, battleLevel));
-
     if (battleMode === 'trainer') {
         // Equipo del entrenador con sus propios EVs/naturaleza definidos en trainers.js
         enemyTeam = trainerData.team
@@ -166,31 +175,6 @@ function makeWildPokemon(base, difficulty, level) {
     };
 }
 
-// ─── MODO ONLINE: iniciar batalla con datos del servidor ──────────────────────
-// Llamado desde multiplayer.js cuando llega 'battle_start'
-function startMPBattle(myTeam, opponentTeam, myName, myAvatar, oppName, oppAvatar, seed) {
-    battleMode = 'online';
-    playerTeam = myTeam;
-    enemyTeam = opponentTeam;
-    playerActive = 0;
-    enemyActive = 0;
-    battleOver = false;
-    turnCount = 1;
-    isBusy = false;
-    window._matchSeed = seed; // semilla PvP única
-
-    const layout = document.querySelector('.battle-layout');
-    if (layout) layout.style.display = '';
-
-    startBattle();
-
-    const hdr = document.getElementById('battleModeLabel');
-    if (hdr) hdr.innerHTML = `🌐 ONLINE`;
-    addLog(`🌐 BATALLA ONLINE`, 'important');
-    addLog(`👤 ${myAvatar} ${myName}  ⚔️  ${oppAvatar} ${oppName}`, 'important');
-    addLog(`🔑 Semilla: ${seed ? seed.substring(0, 10) : '???'}...`, 'separator');
-}
-
 // ─── ARRANCAR BATALLA ─────────────────────────────────────────────────────────
 function startBattle() {
     enemyRevealed.item = false; enemyRevealed.ability = false;
@@ -261,3 +245,154 @@ function generateEnemyTeam() { /* Ahora gestionado por buildPlayerBattle() / bui
 function revancha() { window.location.reload(); }
 
 init();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HANDLERS MULTIJUGADOR — se registran si hay ?mp=1 en la URL
+// ═══════════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('mp')) return;
+    if (typeof MP === 'undefined') return;
+
+    // Batalla iniciada: el servidor envía los dos equipos
+    MP.on('onBattleStart', (msg) => {
+        // msg.myTeam / msg.opponentTeam ya vienen construidos del servidor
+        // Reconstruir los objetos de combate completos
+        playerTeam = msg.myTeam.map(p => buildPokemonFromData(p));
+        enemyTeam = msg.opponentTeam.map(p => buildPokemonFromData(p));
+        playerActive = 0;
+        enemyActive = 0;
+        battleOver = false;
+        turnCount = 1;
+        isBusy = false;
+
+        updateUI();
+        renderMoves();
+
+        const hdr = document.querySelector('.field-header div:nth-child(2)');
+        if (hdr) {
+            hdr.innerHTML = `<span>${msg.myAvatar || '👦'}</span> <span style="color:#86efac;">${msg.myName || 'Jugador 1'}</span> <span style="color:#64748b;">VS</span> <span style="color:#fca5a5;">${msg.opponentName || 'Jugador 2'}</span> <span>${msg.opponentAvatar || '👦'}</span>`;
+        }
+
+        addLog('🌐 ¡Batalla en línea iniciada!', 'important');
+        addLog(`Eres el Jugador ${MP.playerIdx + 1}`, '');
+    });
+
+    // ─── LÓGICA DE PRNG (Seeded Random) ──────────────────────────────────────
+    let originalMathRandom = Math.random;
+    window.setSeededRandom = function (seed) {
+        let currentSeed = Math.floor(seed * 2147483647);
+        Math.random = function () {
+            var t = currentSeed += 0x6D2B79F5;
+            t = Math.imul(t ^ t >>> 15, t | 1);
+            t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+            return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+    };
+    window.restoreRandom = function () {
+        Math.random = originalMathRandom;
+    };
+
+    // El servidor resolvió el turno — ejecutar ambos movimientos
+    MP.on('onTurnResolve', (msg) => {
+        if (msg.turnSeed !== undefined) {
+            window.setSeededRandom(msg.turnSeed);
+        }
+
+        isBusy = true;
+        disableMoves();
+
+        const player = playerTeam[playerActive];
+        const enemy = enemyTeam[enemyActive];
+        const playerMove = msg.myMove;
+        const enemyMove = msg.opponentMove;
+
+        addLog('━━━━━━━━━━━━━━', 'separator');
+        console.log('[MP] Resolviendo turno:', playerMove, enemyMove);
+
+        // Determinar quién va primero
+        let first = 'player';
+        if (playerMove.type === 'move' && enemyMove.type === 'move') {
+            first = whoGoesFirst(playerMove.moveName, enemyMove.moveName);
+        } else if (enemyMove.type === 'switch' && playerMove.type !== 'switch') {
+            first = 'enemy'; // switch siempre antes que ataque
+        }
+
+        // Cambios de Pokémon van antes que ataques
+        const handlePlayerAction = (cb) => {
+            if (playerMove.type === 'switch') {
+                playerActive = playerMove.switchTo;
+                addLog(`🔄 Cambiaste a ${playerTeam[playerActive].name}`, 'important');
+                applyAbilitySwitchIn(playerTeam[playerActive], enemyTeam[enemyActive], (msg, t) => addLog(msg, t));
+                updateUI(); setTimeout(cb, 400);
+            } else {
+                executeAttack(playerTeam[playerActive], enemyTeam[enemyActive], playerMove.moveName, 'player', cb);
+            }
+        };
+        const handleEnemyAction = (cb) => {
+            if (enemyMove.type === 'switch') {
+                enemyActive = enemyMove.switchTo;
+                addLog(`🔄 Rival cambió a ${enemyTeam[enemyActive].name}`, 'important');
+                applyAbilitySwitchIn(enemyTeam[enemyActive], playerTeam[playerActive], (msg, t) => { addLog(msg, t); if (msg) revealEnemyStat('ability', enemyTeam[enemyActive]); });
+                updateUI(); setTimeout(cb, 400);
+            } else {
+                executeAttack(enemyTeam[enemyActive], playerTeam[playerActive], enemyMove.moveName, 'enemy', cb);
+            }
+        };
+
+        if (first === 'player') {
+            handlePlayerAction(() => {
+                if (!enemyTeam[enemyActive].fainted && !playerTeam[playerActive].fainted && !battleOver)
+                    setTimeout(() => handleEnemyAction(() => afterTurn()), 800);
+                else afterTurn();
+            });
+        } else {
+            handleEnemyAction(() => {
+                if (!playerTeam[playerActive].fainted && !enemyTeam[enemyActive].fainted && !battleOver)
+                    setTimeout(() => handlePlayerAction(() => afterTurn()), 800);
+                else afterTurn();
+            });
+        }
+    });
+
+    // El rival hizo cambio forzado
+    MP.on('onOpponentSwitch', (idx) => {
+        enemyActive = idx;
+        addLog(`🔄 Rival envió a ${enemyTeam[enemyActive].name}`, 'important');
+        updateUI();
+        isBusy = false;
+        renderMoves();
+    });
+
+    // Fin de batalla
+    MP.on('onBattleEnd', (winnerIdx) => {
+        const iWon = winnerIdx === MP.playerIdx;
+        endBattle(iWon);
+    });
+});
+
+// Construir Pokémon de combate desde datos serializados del servidor
+function buildPokemonFromData(data) {
+    const evs = data.evs || { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+    const nature = data.nature || 'Seria';
+    const level = data.level || 100;
+    // Buscar stats base en PokemonDB para recalcular correctamente
+    const base = (typeof PokemonDB !== 'undefined') ? PokemonDB[data.id] : null;
+    const baseStats = base ? base.stats : data.stats;
+    const stats = (typeof buildStats === 'function')
+        ? buildStats(baseStats, evs, level, nature)
+        : data.stats;
+    return {
+        ...data,
+        stats,
+        evs, nature, level,
+        moves: data.moves || (base ? base.moves : []),
+        ability: data.ability || (base ? base.ability : ''),
+        item: data.item || 'Ninguno',
+        currentHp: stats.hp,
+        fainted: false,
+        itemUsed: false,
+        status: null,
+        statBoosts: { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+    };
+}

@@ -1,27 +1,22 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Kanto Showdown - Menú</title>
     <!-- fuente offline: usa monospace del sistema -->
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        :root {
-            --theme-bg: #0a0a1a;
-            --theme-panel: #0f172a;
-            --theme-border: #1e293b;
-            --theme-gold: #fbbf24;
-            --theme-accent: #1e293b;
-            --theme-text: #e2e8f0;
-            --theme-text-dark: #1a1a2e;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
             font-family: 'Courier New', Courier, monospace;
-            background: var(--theme-bg);
-            color: #e2e8f0;
+            background: #0a0a1a;
+            color: white;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -29,10 +24,6 @@
             justify-content: center;
             overflow: hidden;
             position: relative;
-            font-size: 15px;
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
 
         /* Fondo animado con estrellas */
@@ -40,17 +31,28 @@
             position: fixed;
             inset: 0;
             z-index: 0;
-            background: radial-gradient(ellipse at center, rgba(26,26,62,.5) 0%, var(--theme-bg) 70%);
+            background: radial-gradient(ellipse at center, #1a1a3e 0%, #0a0a1a 70%);
         }
+
         .star {
             position: absolute;
             border-radius: 50%;
             background: white;
             animation: twinkle var(--d) ease-in-out infinite;
         }
+
         @keyframes twinkle {
-            0%, 100% { opacity: 0.2; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.3); }
+
+            0%,
+            100% {
+                opacity: 0.2;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.3);
+            }
         }
 
         /* Grid de pokeballs de fondo */
@@ -59,7 +61,7 @@
             inset: 0;
             z-index: 0;
             opacity: 0.03;
-            background-image: 
+            background-image:
                 radial-gradient(circle at 50% 50%, #f59e0b 20%, transparent 20%),
                 radial-gradient(circle at 50% 50%, #f59e0b 20%, transparent 20%);
             background-size: 80px 80px;
@@ -78,42 +80,46 @@
             margin-bottom: 3rem;
             position: relative;
         }
+
         .logo-subtitle {
-            font-size: 10px;
-            color: var(--theme-gold);
+            font-size: 9px;
+            color: #64748b;
             letter-spacing: 6px;
             text-transform: uppercase;
             margin-bottom: 1rem;
             animation: fadeDown 0.8s ease-out both;
-            font-weight: 600;
         }
+
         .logo-title {
-            font-size: clamp(28px, 5vw, 48px);
-            background: linear-gradient(135deg, var(--theme-gold), #f59e0b, #ef4444, var(--theme-gold));
+            font-size: clamp(24px, 4vw, 42px);
+            background: linear-gradient(135deg, #fbbf24, #f59e0b, #ef4444, #fbbf24);
             background-size: 200% auto;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             animation: shimmer 3s linear infinite, fadeDown 0.8s ease-out 0.2s both;
-            line-height: 1.2;
+            line-height: 1.4;
             text-shadow: none;
             filter: drop-shadow(0 0 30px rgba(251, 191, 36, 0.4));
-            font-weight: bold;
-            letter-spacing: 2px;
         }
+
         @keyframes shimmer {
-            0% { background-position: 0% center; }
-            100% { background-position: 200% center; }
+            0% {
+                background-position: 0% center;
+            }
+
+            100% {
+                background-position: 200% center;
+            }
         }
+
         .logo-version {
-            font-size: 9px;
-            color: var(--theme-gold);
+            font-size: 8px;
+            color: #fbbf24;
             margin-top: 0.5rem;
             animation: fadeDown 0.8s ease-out 0.4s both;
-            font-weight: 600;
-            letter-spacing: 1px;
         }
-        
+
         /* Pokeball decorativa */
         .pokeball-deco {
             width: 80px;
@@ -124,8 +130,9 @@
             position: relative;
             margin: 1.5rem auto;
             animation: float 3s ease-in-out infinite, fadeDown 0.8s ease-out 0.6s both;
-            box-shadow: 0 0 40px rgba(239, 68, 68, 0.5), inset 0 0 20px rgba(0,0,0,0.3);
+            box-shadow: 0 0 40px rgba(239, 68, 68, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.3);
         }
+
         .pokeball-deco::before {
             content: '';
             position: absolute;
@@ -139,6 +146,7 @@
             border: 4px solid #1a1a2e;
             z-index: 1;
         }
+
         .pokeball-deco::after {
             content: '';
             position: absolute;
@@ -148,10 +156,21 @@
             height: 4px;
             background: #1a1a2e;
         }
+
         @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            25% { transform: translateY(-10px) rotate(5deg); }
-            75% { transform: translateY(-5px) rotate(-5deg); }
+
+            0%,
+            100% {
+                transform: translateY(0) rotate(0deg);
+            }
+
+            25% {
+                transform: translateY(-10px) rotate(5deg);
+            }
+
+            75% {
+                transform: translateY(-5px) rotate(-5deg);
+            }
         }
 
         /* Botones del menú */
@@ -165,10 +184,10 @@
 
         .menu-btn {
             display: block;
-            padding: 1.1rem 2.2rem;
+            padding: 1rem 2rem;
             border-radius: 4px;
             font-family: 'Courier New', Courier, monospace;
-            font-size: 12px;
+            font-size: 11px;
             cursor: pointer;
             border: none;
             transition: all 0.15s;
@@ -176,9 +195,8 @@
             text-align: center;
             position: relative;
             overflow: hidden;
-            font-weight: bold;
-            letter-spacing: 1px;
         }
+
         .menu-btn::before {
             content: '▶';
             position: absolute;
@@ -188,14 +206,17 @@
             opacity: 0;
             transition: all 0.2s;
         }
+
         .menu-btn:hover::before {
             opacity: 1;
             transform: translateY(-50%) translateX(0);
         }
+
         .menu-btn:hover {
             transform: translateX(8px);
             padding-left: 2.5rem;
         }
+
         .menu-btn:active {
             transform: translateX(4px) scale(0.98);
         }
@@ -205,6 +226,7 @@
             color: #1a1a2e;
             box-shadow: 0 4px 0 #b45309, 0 6px 20px rgba(245, 158, 11, 0.4);
         }
+
         .btn-primary:hover {
             box-shadow: 0 6px 0 #b45309, 0 10px 30px rgba(245, 158, 11, 0.6);
         }
@@ -214,71 +236,11 @@
             color: #94a3b8;
             border: 2px solid #334155;
         }
-        .btn-secondary:hover {
-            border-color: var(--theme-gold);
-            color: var(--theme-gold);
-            background: rgba(251, 191, 36, 0.05);
-        }
 
-        /* ─── SELECTOR DE LEGENDARIOS ─────────────────────────────────────── */
-        .legendary-selector {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background: rgba(0,0,0,0.8);
-            border: 2px solid var(--theme-gold);
-            border-radius: 8px;
-            padding: 1.2rem;
-            z-index: 100;
-            animation: fadeUp 0.6s ease-out 1.2s both;
-            max-width: 280px;
-        }
-        .legendary-title {
-            font-size: 9px;
-            color: var(--theme-gold);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 0.8rem;
-            text-align: center;
-            font-weight: bold;
-        }
-        .legendary-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 0.6rem;
-        }
-        .legendary-btn {
-            padding: 0.7rem 1rem;
-            border: 1px solid rgba(255,255,255,0.2);
-            background: rgba(255,255,255,0.02);
-            color: #cbd5e1;
-            border-radius: 4px;
-            cursor: pointer;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 11px;
-            transition: all 0.2s;
-            position: relative;
-            overflow: hidden;
-        }
-        .legendary-btn::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: currentColor;
-            opacity: 0;
-            transition: opacity 0.2s;
-            z-index: -1;
-        }
-        .legendary-btn:hover {
-            color: #1a1a2e;
-            border-color: var(--theme-gold);
-        }
-        .legendary-btn.active {
-            background: var(--theme-gold);
-            color: #1a1a2e;
-            border-color: var(--theme-gold);
-            box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
-            font-weight: bold;
+        .btn-secondary:hover {
+            border-color: #fbbf24;
+            color: #fbbf24;
+            background: rgba(251, 191, 36, 0.05);
         }
 
         /* Info badges */
@@ -289,27 +251,42 @@
             margin-top: 2rem;
             animation: fadeUp 0.8s ease-out 1s both;
         }
+
         .badge {
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.15);
-            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.4rem 0.8rem;
             border-radius: 4px;
-            font-size: 10px;
-            color: #9ca3af;
-            font-weight: 600;
+            font-size: 7px;
+            color: #64748b;
         }
+
         .badge span {
             color: #fbbf24;
-            font-weight: bold;
         }
 
         @keyframes fadeDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
+
         @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* Scanlines effect */
@@ -318,13 +295,11 @@
             inset: 0;
             z-index: 100;
             pointer-events: none;
-            background: repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                rgba(0,0,0,0.03) 2px,
-                rgba(0,0,0,0.03) 4px
-            );
+            background: repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 0, 0, 0.03) 2px,
+                    rgba(0, 0, 0, 0.03) 4px);
         }
 
         /* CRT border glow */
@@ -337,6 +312,7 @@
         }
     </style>
 </head>
+
 <body>
 
     <div class="stars" id="starsContainer"></div>
@@ -352,7 +328,40 @@
             <div class="pokeball-deco"></div>
         </div>
 
+        <div class="user-profile"
+            style="background:rgba(15,23,42,0.8); border:2px solid #334155; padding:15px; border-radius:8px; margin-bottom:20px; text-align:center; animation: fadeUp 0.8s ease-out 0.7s both;">
+            <div style="font-size:9px; color:#fbbf24; margin-bottom:10px; letter-spacing:2px;">PERFIL DE ENTRENADOR
+            </div>
+            <div style="display:flex; justify-content:center; align-items:center; gap:10px;">
+                <select id="userAvatar" onchange="saveProfile()"
+                    style="background:#1e293b; color:white; border:1px solid #4f46e5; border-radius:4px; padding:8px; font-size:16px; cursor:pointer;">
+                    <option value="👦">👦</option>
+                    <option value="👧">👧</option>
+                    <option value="👨">👨</option>
+                    <option value="👩">👩</option>
+                    <option value="🥷">🥷</option>
+                    <option value="🦸">🦸</option>
+                    <option value="🧛">🧛</option>
+                    <option value="🧙">🧙</option>
+                    <option value="🔥">🔥</option>
+                    <option value="💧">💧</option>
+                    <option value="⚡">⚡</option>
+                    <option value="👻">👻</option>
+                    <option value="🐉">🐉</option>
+                    <option value="👾">👾</option>
+                </select>
+                <input type="text" id="userName" onkeyup="saveProfile()" placeholder="Tu Nombre..." maxlength="12"
+                    style="background:#1e293b; color:#10b981; border:1px solid #4f46e5; border-radius:4px; padding:8px 12px; font-family:'Courier New', monospace; font-size:12px; width:160px; text-align:center;">
+            </div>
+            <div style="font-size:7px; color:#64748b; margin-top:8px;">Identificador para batallas online</div>
+        </div>
+
         <div class="menu-buttons">
+            <a href="battle.html?mp=1"
+                style="display:block;padding:12px 20px;background:linear-gradient(135deg,#1e1b4b,#312e81);border:2px solid #4f46e5;border-radius:8px;color:#a5b4fc;text-decoration:none;font-family:'Courier New',Courier,monospace;font-size:11px;text-align:center;margin-bottom:10px; transition:transform 0.2s;"
+                onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                🌐 MULTIJUGADOR (Online)
+            </a>
             <a href="team-builder.html" class="menu-btn btn-primary">
                 ⚔️ NUEVA BATALLA
             </a>
@@ -371,20 +380,12 @@
         </div>
     </div>
 
-    <!-- Selector de Legendarios -->
-    <div class="legendary-selector">
-        <div class="legendary-title">ELIGE TU TEMA</div>
-        <div class="legendary-buttons">
-            <button onclick="setLegendaryTheme('default')" class="legendary-btn active" id="btn-default">Clasico</button>
-            <button onclick="setLegendaryTheme('etherdiel')" class="legendary-btn" id="btn-etherdiel">Etherdiel</button>
-            <button onclick="setLegendaryTheme('helodian')" class="legendary-btn" id="btn-helodian">Helodian</button>
-        </div>
-    </div>
-
     <!-- Modal de info -->
-    <div id="infoModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:200; align-items:center; justify-content:center;">
-        <div style="background:var(--theme-panel); border:2px solid var(--theme-gold); padding:2rem; border-radius:8px; max-width:500px; width:90%; font-size:9px; line-height:2;">
-            <div style="color:var(--theme-gold); font-size:12px; margin-bottom:1.5rem; text-align:center;">CÓMO JUGAR</div>
+    <div id="infoModal"
+        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:200; align-items:center; justify-content:center;">
+        <div
+            style="background:#0f172a; border:2px solid #fbbf24; padding:2rem; border-radius:8px; max-width:500px; width:90%; font-size:9px; line-height:2;">
+            <div style="color:#fbbf24; font-size:12px; margin-bottom:1.5rem; text-align:center;">CÓMO JUGAR</div>
             <div style="color:#94a3b8;">
                 <p>1. Selecciona 3-6 Pokémon para tu equipo</p>
                 <p>2. Equipa objetos y distribuye EVs</p>
@@ -392,84 +393,49 @@
                 <p>4. Elige movimientos estratégicamente</p>
                 <p>5. ¡Derrota al equipo rival!</p>
                 <br>
-                <p style="color:#64748b;">Los ataques con <span style="color:#fbbf24;">mayor prioridad</span> van primero.<br>
-                Si hay empate, gana quien tenga más <span style="color:#22c55e;">SPE</span>.</p>
+                <p style="color:#64748b;">Los ataques con <span style="color:#fbbf24;">mayor prioridad</span> van
+                    primero.<br>
+                    Si hay empate, gana quien tenga más <span style="color:#22c55e;">SPE</span>.</p>
             </div>
-            <button onclick="closeInfo()" style="width:100%; margin-top:1.5rem; padding:0.8rem; background:#ef4444; border:none; color:white; font-family:'Courier New',Courier,monospace; font-size:9px; cursor:pointer; border-radius:4px;">CERRAR</button>
+            <button onclick="closeInfo()"
+                style="width:100%; margin-top:1.5rem; padding:0.8rem; background:#ef4444; border:none; color:white; font-family:'Courier New',Courier,monospace; font-size:9px; cursor:pointer; border-radius:4px;">CERRAR</button>
         </div>
     </div>
 
     <script>
-        // TEMAS LEGENDARIOS
-        const THEMES = {
-            default: {
-                bg: '#0a0a1a',
-                panel: '#0f172a',
-                border: '#1e293b',
-                gold: '#fbbf24',
-                accent: '#1e293b',
-                text: '#e2e8f0',
-                'text-dark': '#1a1a2e'
-            },
-            etherdiel: {
-                bg: '#f0f0f0',
-                panel: '#e3f2fd',
-                border: '#1e88e5',
-                gold: '#1e88e5',
-                accent: '#2196f3',
-                text: '#000000',
-                'text-dark': '#000000'
-            },
-            helodian: {
-                bg: '#0a0a0a',
-                panel: '#2a0a0a',
-                border: '#c62828',
-                gold: '#e53935',
-                accent: '#d32f2f',
-                text: '#e2e8f0',
-                'text-dark': '#1a1a2e'
+        function saveProfile() {
+            const name = document.getElementById('userName').value.trim();
+            const avatar = document.getElementById('userAvatar').value;
+            if (name) localStorage.setItem('userName', name);
+            localStorage.setItem('userAvatar', avatar);
+        }
+
+        function loadProfile() {
+            const name = localStorage.getItem('userName') || '';
+            const avatar = localStorage.getItem('userAvatar') || '👦';
+            document.getElementById('userName').value = name;
+            document.getElementById('userAvatar').value = avatar;
+        }
+
+        window.onload = () => {
+            loadProfile();
+            // Generar estrellas
+            const container = document.getElementById('starsContainer');
+            for (let i = 0; i < 150; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                const size = Math.random() * 3 + 1;
+                star.style.cssText = `
+                    width: ${size}px;
+                    height: ${size}px;
+                    top: ${Math.random() * 100}%;
+                    left: ${Math.random() * 100}%;
+                    --d: ${Math.random() * 3 + 2}s;
+                    animation-delay: ${Math.random() * 3}s;
+                `;
+                container.appendChild(star);
             }
         };
-
-        function setLegendaryTheme(themeName) {
-            const theme = THEMES[themeName] || THEMES.default;
-            document.documentElement.style.setProperty('--theme-bg', theme.bg);
-            document.documentElement.style.setProperty('--theme-panel', theme.panel);
-            document.documentElement.style.setProperty('--theme-border', theme.border);
-            document.documentElement.style.setProperty('--theme-gold', theme.gold);
-            document.documentElement.style.setProperty('--theme-accent', theme.accent);
-            document.documentElement.style.setProperty('--theme-text', theme.text);
-            document.documentElement.style.setProperty('--theme-text-dark', theme['text-dark']);
-            
-            // Guardar preferencia
-            localStorage.setItem('legendaryTheme', themeName);
-            
-            // Actualizar botones
-            document.querySelectorAll('.legendary-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('btn-' + themeName).classList.add('active');
-        }
-
-        function loadTheme() {
-            const saved = localStorage.getItem('legendaryTheme') || 'default';
-            setLegendaryTheme(saved);
-        }
-
-        // Generar estrellas
-        const container = document.getElementById('starsContainer');
-        for (let i = 0; i < 150; i++) {
-            const star = document.createElement('div');
-            star.className = 'star';
-            const size = Math.random() * 3 + 1;
-            star.style.cssText = `
-                width: ${size}px;
-                height: ${size}px;
-                top: ${Math.random() * 100}%;
-                left: ${Math.random() * 100}%;
-                --d: ${Math.random() * 3 + 2}s;
-                animation-delay: ${Math.random() * 3}s;
-            `;
-            container.appendChild(star);
-        }
 
         function continueTeam() {
             const saved = localStorage.getItem('kantoTeam');
@@ -487,10 +453,7 @@
         function closeInfo() {
             document.getElementById('infoModal').style.display = 'none';
         }
-
-        // Cargar tema al iniciar
-        document.addEventListener('DOMContentLoaded', loadTheme);
-        loadTheme();
     </script>
 </body>
+
 </html>

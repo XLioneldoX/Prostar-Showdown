@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>Prostar Showdown - Constructor de Equipo</title>
+    <title>Kanto Showdown - Constructor de Equipo</title>
+    <!-- fuente offline: usa monospace del sistema -->
     <style>
         * {
             margin: 0;
@@ -13,21 +14,10 @@
         }
 
         :root {
-            --theme-bg: #0a0a1a;
-            --theme-bg-darker: #060612;
-            --theme-panel: #0f172a;
-            --theme-border: #1e293b;
-            --theme-border-light: #334155;
-            --theme-gold: #fbbf24;
-            --theme-accent-dark: #1e1b4b;
-            --theme-input: #111827;
-            --theme-text-muted: #475569;
-            --theme-text-light: #cbd5e1;
-            --theme-text-lighter: #9ca3af;
-            --bg: var(--theme-bg);
-            --panel: var(--theme-panel);
-            --border: var(--theme-border);
-            --gold: var(--theme-gold);
+            --bg: #0a0a1a;
+            --panel: #0f172a;
+            --border: #1e293b;
+            --gold: #fbbf24;
             --red: #ef4444;
             --green: #22c55e;
             --blue: #3b82f6;
@@ -35,14 +25,11 @@
 
         body {
             font-family: 'Courier New', Courier, monospace;
-            background: var(--theme-bg);
-            color: #e2e8f0;
+            background: var(--bg);
+            color: white;
             height: 100vh;
             overflow: hidden;
-            font-size: 14px;
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+            font-size: 13px;
         }
 
         body::after {
@@ -56,7 +43,7 @@
 
         /* ── HEADER ─────────────────────────────────────────────────── */
         .header {
-            background: linear-gradient(90deg, var(--theme-panel), var(--theme-accent-dark), var(--theme-panel));
+            background: linear-gradient(90deg, #0f172a, #1e1b4b, #0f172a);
             border-bottom: 2px solid var(--gold);
             padding: .75rem 1.5rem;
             display: flex;
@@ -66,30 +53,27 @@
         }
 
         .header-title {
-            font-size: 15px;
-            font-weight: bold;
+            font-size: 13px;
             color: var(--gold);
             text-shadow: 0 0 20px rgba(251, 191, 36, .5);
         }
 
         .nav-btn {
-            padding: .5rem .9rem;
+            padding: .4rem .8rem;
             background: transparent;
             border: 1px solid var(--border);
-            color: #9ca3af;
+            color: #64748b;
             font-family: 'Courier New', Courier, monospace;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             border-radius: 4px;
             text-decoration: none;
             transition: all .15s;
-            font-weight: 500;
         }
 
         .nav-btn:hover {
             border-color: var(--gold);
             color: var(--gold);
-            background: rgba(251, 191, 36, .05);
         }
 
         /* ── LAYOUT 2 COLUMNAS ──────────────────────────────────────── */
@@ -102,8 +86,8 @@
 
         /* ── PANEL IZQUIERDO ────────────────────────────────────────── */
         .left-panel {
-            background: var(--theme-bg-darker);
-            border-right: 2px solid var(--theme-border);
+            background: #060612;
+            border-right: 2px solid #1e293b;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -112,16 +96,14 @@
         /* Equipo activo */
         .team-section {
             padding: 12px 14px 8px;
-            border-bottom: 1px solid var(--theme-border);
+            border-bottom: 1px solid #1e293b;
         }
 
         .section-title {
-            font-size: 14px;
-            font-weight: bold;
+            font-size: 13px;
             color: var(--gold);
             letter-spacing: 1px;
             margin-bottom: 8px;
-            text-transform: uppercase;
         }
 
         .team-slots {
@@ -135,7 +117,7 @@
             width: 52px;
             height: 52px;
             background: rgba(255, 255, 255, .02);
-            border: 2px solid var(--theme-border);
+            border: 2px solid #1e293b;
             border-radius: 6px;
             display: flex;
             align-items: center;
@@ -164,7 +146,7 @@
 
         .slot-empty-icon {
             font-size: 20px;
-            color: var(--theme-border);
+            color: #1e293b;
         }
 
         .slot-remove {
@@ -208,7 +190,7 @@
             justify-content: space-between;
             align-items: center;
             font-size: 8.5px;
-            color: var(--theme-text-muted);
+            color: #475569;
         }
 
         #minWarning {
@@ -218,7 +200,7 @@
         /* Botones de acción */
         .action-buttons {
             padding: 10px 14px;
-            border-bottom: 1px solid var(--theme-border);
+            border-bottom: 1px solid #1e293b;
             display: flex;
             flex-direction: column;
             gap: 6px;
@@ -237,35 +219,19 @@
 
         .action-btn:hover {
             filter: brightness(1.1);
-            transform: translateY(-1px);
-        }
-
-        .action-btn:active {
-            transform: translateY(0);
         }
 
         .action-btn:disabled {
             opacity: .4;
             cursor: not-allowed;
             filter: none;
-            transform: none;
         }
 
         .btn-battle {
             background: linear-gradient(135deg, #f59e0b, #ef4444);
             color: #1a1a2e;
             font-size: 13px;
-            font-weight: bold;
             box-shadow: 0 3px 0 #b45309;
-        }
-
-        .btn-multi {
-            background: linear-gradient(135deg, #0891b2, #1e40af);
-            color: #e0f2fe;
-            font-size: 13px;
-            font-weight: bold;
-            border: 2px solid #0284c7;
-            box-shadow: 0 3px 0 #075985;
         }
 
         .btn-row {
@@ -299,12 +265,19 @@
             font-size: 13px;
         }
 
+        .btn-multi {
+            background: linear-gradient(135deg, #1e1b4b, #1e3a5f);
+            color: #67e8f9;
+            border: 2px solid #0891b2;
+            font-size: 13px;
+        }
+
         #savedStatus {
             font-size: 12px;
-            color: var(--theme-border-light);
+            color: #334155;
             text-align: center;
             padding: 3px;
-            border: 1px solid var(--theme-border);
+            border: 1px solid #1e293b;
             border-radius: 3px;
         }
 
@@ -352,46 +325,41 @@
         }
 
         .poke-name {
-            font-size: 11px;
-            color: #cbd5e1;
+            font-size: 9.5px;
+            color: #94a3b8;
             margin-top: 3px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            font-weight: 500;
         }
 
         .poke-types {
             display: flex;
             gap: 2px;
             justify-content: center;
-            margin-top: 2px;
+            margin-top: 3px;
             flex-wrap: wrap;
         }
 
         .type-badge {
-            font-size: 8px;
-            padding: 2px 4px;
+            font-size: 13px;
+            padding: 1px 4px;
             border-radius: 2px;
-            font-weight: 600;
         }
 
         /* Type colors */
         .type-FUEGO,
         .type-FIRE {
             background: #dc2626;
-            color: #fff
         }
 
         .type-AGUA,
         .type-WATER {
             background: #2563eb;
-            color: #fff
         }
 
         .type-PLANTA {
             background: #16a34a;
-            color: #fff
         }
 
         .type-ELECTRICO,
@@ -402,70 +370,57 @@
 
         .type-FANTASMA {
             background: #7e22ce;
-            color: #fff
         }
 
         .type-TIERRA {
             background: #92400e;
-            color: #fff
         }
 
         .type-NORMAL {
             background: #6b7280;
-            color: #fff
         }
 
         .type-PSÍQUICO,
         .type-PSIQUICO {
             background: #db2777;
-            color: #fff
         }
 
         .type-LUCHA {
             background: #c2410c;
-            color: #fff
         }
 
         .type-VOLADOR {
             background: #4f46e5;
-            color: #fff
         }
 
         .type-VENENO {
             background: #7c3aed;
-            color: #fff
         }
 
         .type-HIELO {
             background: #0891b2;
-            color: #fff
         }
 
         .type-ROCA {
             background: #a16207;
-            color: #fff
         }
 
         .type-DRAGÓN,
         .type-DRAGON {
             background: #4338ca;
-            color: #fff
         }
 
         .type-SINIESTRO {
             background: #1f2937;
-            color: #fff;
             border: 1px solid #374151;
         }
 
         .type-ACERO {
             background: #64748b;
-            color: #fff
         }
 
         .type-BICHO {
             background: #4d7c0f;
-            color: #fff
         }
 
         .type-HADA {
@@ -478,7 +433,7 @@
         }
 
         ::-webkit-scrollbar-thumb {
-            background: var(--theme-border);
+            background: #1e293b;
             border-radius: 2px;
         }
 
@@ -486,13 +441,16 @@
         .right-panel {
             background: var(--bg);
             overflow-y: auto;
+            padding: 1.5rem;
             display: flex;
             flex-direction: column;
             gap: 14px;
         }
 
+        /* Pokémon del equipo como selector visual */
         .team-editor-bar {
             display: none;
+            /* se muestra con JS cuando hay equipo */
         }
 
         .team-editor-bar.visible {
@@ -509,17 +467,12 @@
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
-            align-items: center;
         }
 
         .teb-slot {
             position: relative;
             cursor: pointer;
             transition: all .15s;
-            width: 84px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
         }
 
         .teb-slot img {
@@ -527,48 +480,29 @@
             height: 64px;
             object-fit: contain;
             image-rendering: pixelated;
-            border: 2px solid var(--theme-border);
+            border: 2px solid #1e293b;
             border-radius: 8px;
             background: rgba(255, 255, 255, .02);
         }
 
         .teb-slot:hover img {
             border-color: #fbbf24;
-            transform: translateY(-3px);
         }
 
         .teb-slot.active img {
             border-color: var(--gold);
             box-shadow: 0 0 14px rgba(251, 191, 36, .5);
-            transform: translateY(-3px);
         }
 
         .teb-slot-name {
-            font-size: 11px;
-            color: #cbd5e1;
+            font-size: 13px;
+            color: #64748b;
             text-align: center;
-            margin-top: 6px;
-            font-weight: 700;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            width: 100%;
+            margin-top: 3px;
         }
 
         .teb-slot.active .teb-slot-name {
             color: var(--gold);
-        }
-
-        /* Drag and drop */
-        .team-slot.dragging,
-        .teb-slot.dragging {
-            opacity: 0.5;
-        }
-
-        .team-slot.drag-over,
-        .teb-slot.drag-over {
-            border-color: var(--gold) !important;
-            background: rgba(251, 191, 36, .08) !important;
         }
 
         /* Panel de entrenadores */
@@ -587,8 +521,8 @@
         }
 
         .trainer-card {
-            background: var(--theme-panel);
-            border: 2px solid var(--theme-border);
+            background: #0f172a;
+            border: 2px solid #1e293b;
             border-radius: 8px;
             padding: 14px 12px;
             cursor: pointer;
@@ -599,7 +533,6 @@
         .trainer-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 6px 20px rgba(0, 0, 0, .5);
-            border-color: var(--gold);
         }
 
         .trainer-avatar {
@@ -649,8 +582,8 @@
         }
 
         .wild-card {
-            background: var(--theme-panel);
-            border: 2px solid var(--theme-border);
+            background: #0f172a;
+            border: 2px solid #1e293b;
             border-radius: 8px;
             padding: 16px;
             cursor: pointer;
@@ -663,7 +596,6 @@
         .wild-card:hover {
             border-color: var(--gold);
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, .4);
         }
 
         .wild-icon {
@@ -673,7 +605,6 @@
         .wc-title {
             font-size: 13px;
             margin-bottom: 5px;
-            font-weight: bold;
         }
 
         .wc-desc {
@@ -689,7 +620,7 @@
             align-items: center;
             justify-content: center;
             flex: 1;
-            color: var(--theme-border);
+            color: #1e293b;
             gap: 12px;
         }
 
@@ -708,7 +639,7 @@
             position: fixed;
             bottom: 2rem;
             right: 2rem;
-            background: var(--theme-panel);
+            background: #0f172a;
             border: 2px solid var(--gold);
             color: var(--gold);
             padding: .6rem 1.2rem;
@@ -730,7 +661,9 @@
             }
         }
 
-        /* ── EDITOR MODAL ──────────────────────────────────────────── */
+        /* ══════════════════════════════════════════════════════════════
+           EDITOR MODAL
+           ══════════════════════════════════════════════════════════════ */
         .editor-modal {
             position: fixed;
             inset: 0;
@@ -777,8 +710,8 @@
             align-items: center;
             justify-content: space-between;
             padding: 12px 16px;
-            background: linear-gradient(90deg, var(--theme-panel), var(--theme-accent-dark), var(--theme-panel));
-            border-bottom: 2px solid var(--theme-border);
+            background: linear-gradient(90deg, #0f172a, #1e1b4b, #0f172a);
+            border-bottom: 2px solid #1e293b;
             flex-shrink: 0;
         }
 
@@ -831,23 +764,22 @@
 
         .em-tabs {
             display: flex;
-            background: var(--theme-bg-darker);
-            border-bottom: 2px solid var(--theme-border);
+            background: #060612;
+            border-bottom: 2px solid #1e293b;
             flex-shrink: 0;
         }
 
         .em-tab {
             flex: 1;
-            padding: 10px 5px;
+            padding: 9px 4px;
             background: transparent;
             border: none;
             border-bottom: 3px solid transparent;
-            color: #64748b;
+            color: #475569;
             font-family: 'Courier New', Courier, monospace;
-            font-size: 10px;
+            font-size: 8.5px;
             cursor: pointer;
             transition: all .15s;
-            font-weight: 600;
         }
 
         .em-tab:hover {
@@ -867,23 +799,22 @@
 
         .em-footer {
             padding: 10px 16px;
-            border-top: 2px solid var(--theme-border);
-            background: var(--theme-bg-darker);
+            border-top: 2px solid #1e293b;
+            background: #060612;
             flex-shrink: 0;
         }
 
         .em-save-btn {
             width: 100%;
-            padding: 10px;
+            padding: 9px;
             background: linear-gradient(135deg, #f59e0b, #d97706);
             border: none;
             border-radius: 5px;
             color: #0a0a0a;
             font-family: 'Courier New', Courier, monospace;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
             transition: all .15s;
-            font-weight: bold;
         }
 
         .em-save-btn:hover {
@@ -918,17 +849,17 @@
         }
 
         .move-option {
-            background: var(--theme-input);
-            border: 2px solid var(--theme-border);
+            background: #111827;
+            border: 2px solid #1e293b;
             border-radius: 5px;
-            padding: 8px;
+            padding: 7px;
             cursor: pointer;
             transition: all .15s;
-            opacity: .8;
+            opacity: .7;
         }
 
         .move-option:hover {
-            border-color: var(--theme-text-muted);
+            border-color: #475569;
             opacity: 1;
         }
 
@@ -939,22 +870,20 @@
         }
 
         .mo-name {
-            font-size: 12px;
-            color: #e2e8f0;
+            font-size: 13px;
+            color: white;
             margin-bottom: 3px;
-            font-weight: bold;
         }
 
         .mo-meta {
-            font-size: 11px;
-            color: #94a3b8;
-            font-weight: 500;
+            font-size: 12px;
+            color: #64748b;
         }
 
         .mo-desc {
-            font-size: 10px;
-            color: #64748b;
-            line-height: 1.5;
+            font-size: 9.5px;
+            color: #475569;
+            line-height: 1.4;
             margin-top: 2px;
         }
 
@@ -1033,7 +962,7 @@
             border-left: 3px solid #f472b6;
         }
 
-        /* Naturaleza + EVs */
+        /* Naturaleza + EVs en misma pestaña */
         .nature-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
@@ -1042,19 +971,17 @@
         }
 
         .nature-option {
-            padding: 7px 9px;
-            background: var(--theme-input);
-            border: 2px solid var(--theme-border);
+            padding: 6px 8px;
+            background: #111827;
+            border: 2px solid #1e293b;
             border-radius: 5px;
             cursor: pointer;
             transition: all .15s;
-            font-size: 9px;
-            font-weight: 500;
-            color: var(--theme-text-light);
+            font-size: 8.5px;
         }
 
         .nature-option:hover {
-            border-color: var(--theme-border-light);
+            border-color: #334155;
         }
 
         .nature-option.selected {
@@ -1063,7 +990,7 @@
             color: var(--gold);
         }
 
-        /* Habilidad + Objeto */
+        /* Habilidad (2 opciones) + Objeto */
         .items-list {
             display: flex;
             flex-direction: column;
@@ -1074,8 +1001,8 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            background: var(--theme-input);
-            border: 2px solid var(--theme-border);
+            background: #111827;
+            border: 2px solid #1e293b;
             border-radius: 6px;
             padding: 8px 10px;
             cursor: pointer;
@@ -1083,7 +1010,7 @@
         }
 
         .item-option:hover {
-            border-color: var(--theme-border-light);
+            border-color: #334155;
         }
 
         .item-option.selected {
@@ -1098,16 +1025,14 @@
 
         .item-option-name {
             font-size: 13px;
-            color: #e2e8f0;
+            color: white;
             margin-bottom: 3px;
-            font-weight: bold;
         }
 
         .item-option-desc {
-            font-size: 11px;
-            color: #94a3b8;
+            font-size: 12px;
+            color: #64748b;
             line-height: 1.5;
-            font-weight: 500;
         }
 
         /* EVs */
@@ -1142,8 +1067,8 @@
         }
 
         .stat-btn {
-            background: var(--theme-border);
-            border: 1px solid var(--theme-border-light);
+            background: #1e293b;
+            border: 1px solid #334155;
             color: white;
             padding: 2px 7px;
             font-size: 13px;
@@ -1152,7 +1077,7 @@
         }
 
         .stat-btn:hover {
-            background: var(--theme-border-light);
+            background: #334155;
         }
 
         input[type=range].stat-slider {
@@ -1164,7 +1089,7 @@
 
         .stat-bar-bg {
             height: 3px;
-            background: var(--theme-border);
+            background: #1e293b;
             border-radius: 2px;
             margin: 3px 0 2px;
             overflow: hidden;
@@ -1178,15 +1103,14 @@
 
         .stat-evs {
             font-size: 9.5px;
-            color: var(--theme-text-muted);
+            color: #475569;
         }
 
         .editor-hint {
-            font-size: 10px;
-            color: #64748b;
+            font-size: 9.5px;
+            color: #334155;
             margin-top: 8px;
             line-height: 1.8;
-            font-weight: 500;
         }
 
         .editor-hint code {
@@ -1199,8 +1123,8 @@
             align-items: center;
             gap: 10px;
             padding: 10px;
-            background: var(--theme-panel);
-            border: 1px solid var(--theme-border);
+            background: #0f172a;
+            border: 1px solid #1e293b;
             border-radius: 6px;
             margin-bottom: 6px;
         }
@@ -1246,7 +1170,7 @@
             color: #fca5a5;
         }
 
-        /* ── EDITOR INLINE ────────────────────────────────── */
+        /* ── EDITOR INLINE (panel derecho) ────────────────── */
         .editor-inline {
             display: none;
             max-height: calc(100vh - 52px - 110px);
@@ -1264,8 +1188,8 @@
             align-items: center;
             gap: 12px;
             padding: 14px 16px;
-            background: linear-gradient(90deg, var(--theme-panel), var(--theme-accent-dark), var(--theme-panel));
-            border-bottom: 2px solid var(--theme-border);
+            background: linear-gradient(90deg, #0f172a, #1e1b4b, #0f172a);
+            border-bottom: 2px solid #1e293b;
             flex-shrink: 0;
         }
 
@@ -1313,8 +1237,8 @@
 
         .ei-tabs {
             display: flex;
-            background: var(--theme-bg-darker);
-            border-bottom: 2px solid var(--theme-border);
+            background: #060612;
+            border-bottom: 2px solid #1e293b;
             flex-shrink: 0;
         }
 
@@ -1324,7 +1248,7 @@
             background: transparent;
             border: none;
             border-bottom: 3px solid transparent;
-            color: var(--theme-text-muted);
+            color: #475569;
             font-family: 'Courier New', Courier, monospace;
             font-size: 12px;
             cursor: pointer;
@@ -1349,8 +1273,8 @@
 
         .ei-footer {
             padding: 10px 16px;
-            border-top: 2px solid var(--theme-border);
-            background: var(--theme-bg-darker);
+            border-top: 2px solid #1e293b;
+            background: #060612;
             flex-shrink: 0;
         }
 
@@ -1365,14 +1289,13 @@
             font-size: 12px;
             cursor: pointer;
             transition: all .15s;
-            font-weight: bold;
         }
 
         .ei-save-btn:hover {
             filter: brightness(1.1);
         }
 
-        /* Nivel selector */
+        /* nivel badge en el team-editor-bar */
         .level-selector {
             display: flex;
             align-items: center;
@@ -1383,8 +1306,8 @@
         }
 
         .level-input {
-            background: var(--theme-input);
-            border: 1px solid var(--theme-border-light);
+            background: #111827;
+            border: 1px solid #334155;
             color: var(--gold);
             font-family: 'Courier New', Courier, monospace;
             font-size: 13px;
@@ -1394,23 +1317,22 @@
             text-align: center;
         }
 
-        /* ── BUSCADOR Y FILTROS ───────────────────────────── */
+        /* ── BUSCADOR DE POKÉMON ─────────────────────────────────── */
         .search-bar {
-            padding: 8px 14px 0 14px;
+            padding: 8px 14px;
+            border-bottom: 1px solid #1e293b;
         }
 
         .search-input {
             width: 100%;
-            background: var(--theme-input);
-            border: 1px solid var(--theme-border-light);
-            color: #e2e8f0;
+            background: #111827;
+            border: 1px solid #334155;
+            color: white;
             font-family: 'Courier New', Courier, monospace;
-            font-size: 13px;
-            padding: 7px 11px;
+            font-size: 12px;
+            padding: 6px 10px;
             border-radius: 5px;
             outline: none;
-            margin-bottom: 8px;
-            font-weight: 500;
         }
 
         .search-input::placeholder {
@@ -1421,84 +1343,10 @@
             border-color: var(--gold);
         }
 
-        .filter-section {
-            padding: 0 14px 8px 14px;
-            border-bottom: 1px solid var(--theme-border);
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .filter-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            align-items: center;
-        }
-
-        .filter-label {
-            font-size: 9px;
-            color: #9ca3af;
-            min-width: 40px;
-            font-weight: 600;
-        }
-
-        .filter-select {
-            background: var(--theme-input);
-            border: 1px solid var(--theme-border-light);
-            color: #e2e8f0;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 12px;
-            padding: 5px 8px;
-            border-radius: 4px;
-            outline: none;
-            max-width: 130px;
-            cursor: pointer;
-            font-weight: 500;
-        }
-
-        .filter-select:focus {
-            border-color: var(--gold);
-            color: var(--gold);
-        }
-
         .search-results-count {
-            font-size: 10px;
-            color: #64748b;
-            padding: 4px 14px;
-            font-weight: 500;
-        }
-
-        /* Selector de tema en header */
-        .theme-selector {
-            display: flex;
-            gap: 3px;
-            height: 32px;
-            background: rgba(255, 255, 255, .03);
-            border-radius: 4px;
-            padding: 0 6px;
-            align-items: center;
-            border: 1px solid rgba(251, 191, 36, .2);
-            margin-right: 12px;
-        }
-
-        .theme-btn {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-            padding: 0 4px;
-            transition: all .15s;
-            opacity: .6;
-        }
-
-        .theme-btn:hover {
-            opacity: 1;
-            transform: scale(1.2);
-        }
-
-        .theme-btn.active {
-            opacity: 1;
+            font-size: 9.5px;
+            color: #475569;
+            margin-top: 4px;
         }
     </style>
 </head>
@@ -1506,23 +1354,14 @@
 <body>
 
     <div class="header">
-        <div class="header-title">⚔️ PROSTAR SHOWDOWN — CONSTRUCTOR</div>
-        <div style="display:flex;gap:6px;align-items:center;">
-            <div class="theme-selector">
-                <button onclick="setTheme('default')" class="theme-btn active" id="tb-theme-default"
-                    title="Clásico">⚪</button>
-                <button onclick="setTheme('etherdiel')" class="theme-btn" id="tb-theme-etherdiel"
-                    title="Etherdiel">✨</button>
-                <button onclick="setTheme('helodian')" class="theme-btn" id="tb-theme-helodian"
-                    title="Helodian">🔥</button>
-            </div>
-            <a href="index.html" class="nav-btn">◀ MENÚ</a>
-        </div>
+        <div class="header-title">⚔️ CONSTRUCTOR DE EQUIPO</div>
+        <div style="display:flex;gap:6px;"><a href="calculator.html" class="nav-btn">🧮 CALC</a><a href="index.html"
+                class="nav-btn">◀ MENÚ</a></div>
     </div>
 
     <div class="layout">
 
-        <!-- ── COL IZQUIERDA ─────────────────────────────────────── -->
+        <!-- ── COL IZQUIERDA: equipo + acciones + dex ─────────────────── -->
         <div class="left-panel">
 
             <div class="team-section">
@@ -1536,12 +1375,9 @@
             </div>
 
             <div class="action-buttons">
-                <!-- Batalla offline -->
                 <button class="action-btn btn-battle" onclick="goToBattle()" id="battleBtn" disabled>⚔️ BATALLA
                     LIBRE</button>
-                <!-- Batalla online (del código 1) -->
-                <button class="action-btn btn-multi" onclick="goToOnlineBattle()" id="onlineBtn">🌐 BATALLA
-                    ONLINE</button>
+                <button class="action-btn btn-multi" onclick="goToOnlineBattle()">🌐 BATALLA ONLINE</button>
                 <div class="btn-row">
                     <button class="action-btn btn-trainer" onclick="showPanel('trainer')">🎖️ ENTRENADORES</button>
                     <button class="action-btn btn-wild" onclick="showPanel('wild')">🎲 SALVAJE</button>
@@ -1557,55 +1393,17 @@
                 <div class="section-title">POKÉMON DISPONIBLES</div>
                 <div class="search-bar">
                     <input class="search-input" type="text" id="pokeSearch"
-                        placeholder="🔍 Buscar por nombre, tipo o ID..." oninput="filterPokemon()">
+                        placeholder="🔍 Buscar por nombre, tipo o ID..." oninput="filterPokemon(this.value)">
+                    <div class="search-results-count" id="searchCount"></div>
                 </div>
-                <div class="filter-section">
-                    <div class="filter-row">
-                        <label class="filter-label">Tipo:</label>
-                        <select class="filter-select" id="typeFilter" onchange="filterPokemon()">
-                            <option value="">Todos</option>
-                            <option value="FUEGO">🔥 Fuego</option>
-                            <option value="AGUA">💧 Agua</option>
-                            <option value="PLANTA">🌿 Planta</option>
-                            <option value="ELÉCTRICO">⚡ Eléctrico</option>
-                            <option value="HIELO">❄️ Hielo</option>
-                            <option value="LUCHA">👊 Lucha</option>
-                            <option value="VENENO">☠️ Veneno</option>
-                            <option value="TIERRA">🪨 Tierra</option>
-                            <option value="VOLADOR">🕊️ Volador</option>
-                            <option value="PSÍQUICO">🧠 Psíquico</option>
-                            <option value="BICHO">🐛 Bicho</option>
-                            <option value="ROCA">🗿 Roca</option>
-                            <option value="FANTASMA">👻 Fantasma</option>
-                            <option value="DRAGÓN">🐉 Dragón</option>
-                            <option value="SINIESTRO">🌙 Siniestro</option>
-                            <option value="ACERO">⚙️ Acero</option>
-                            <option value="HADA">✨ Hada</option>
-                            <option value="NORMAL">◯ Normal</option>
-                        </select>
-                    </div>
-                    <div class="filter-row">
-                        <label class="filter-label">Orden:</label>
-                        <select class="filter-select" id="sortFilter" onchange="filterPokemon()">
-                            <option value="id">ID (↑)</option>
-                            <option value="name">Nombre (A-Z)</option>
-                            <option value="atk">Ataque (↓)</option>
-                            <option value="def">Defensa (↓)</option>
-                            <option value="spa">Atq. Esp (↓)</option>
-                            <option value="spd">Def. Esp (↓)</option>
-                            <option value="spe">Velocidad (↓)</option>
-                            <option value="total">Total Stats (↓)</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="search-results-count" id="searchCount"></div>
                 <div class="pokemon-grid" id="pokemonGrid"></div>
             </div>
         </div>
 
-        <!-- ── COL DERECHA ─────────────────────────────────────── -->
+        <!-- ── COL DERECHA: editor inline + modos ───────────────────── -->
         <div class="right-panel" id="rightPanel" style="display:flex;flex-direction:column;overflow:hidden;padding:0;">
 
+            <!-- Barra superior con selector de Pokémon + nivel -->
             <div class="team-editor-bar" id="teamEditorBar"
                 style="padding:10px 14px;border-bottom:1px solid #1e293b;flex-shrink:0;">
                 <div class="teb-title">✏️ SELECCIONA UN POKÉMON PARA EDITAR</div>
@@ -1618,6 +1416,7 @@
                 </div>
             </div>
 
+            <!-- Editor inline -->
             <div class="editor-inline" id="editorInline">
                 <div class="ei-header">
                     <img class="ei-sprite" id="eiSprite" src="">
@@ -1641,12 +1440,17 @@
                 </div>
             </div>
 
+            <!-- Paneles de modo (entrenadores / salvaje / placeholder) -->
             <div id="modePanels"
                 style="flex:1;overflow-y:auto;padding:1.5rem;display:flex;flex-direction:column;gap:14px;">
+
+                <!-- Entrenadores -->
                 <div class="trainer-select-panel" id="trainerPanel">
                     <div class="section-title" style="margin-bottom:12px;">🎖️ ELIGE ENTRENADOR RIVAL</div>
                     <div class="trainer-grid" id="trainerGrid"></div>
                 </div>
+
+                <!-- Salvaje -->
                 <div class="wild-select-panel" id="wildPanel">
                     <div class="section-title" style="margin-bottom:12px;">🎲 MODO POKÉMON SALVAJE <span
                             style="font-size:6px;color:#64748b;">(ambos equipos aleatorios)</span></div>
@@ -1655,7 +1459,8 @@
                             <div class="wild-icon">🌿</div>
                             <div>
                                 <div class="wc-title">NORMAL</div>
-                                <div class="wc-desc">EVs modestos, objetos básicos. Equipos aleatorios justos.</div>
+                                <div class="wc-desc">EVs modestos, objetos básicos. Tú y el rival tienen equipos
+                                    aleatorios justos.</div>
                             </div>
                         </div>
                         <div class="wild-card" onclick="goToWild('hard')">
@@ -1674,6 +1479,8 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Placeholder -->
                 <div class="right-placeholder" id="rightPlaceholder" style="flex:1;">
                     <div class="ph-icon">🎮</div>
                     <div class="ph-text">Añade Pokémon a tu equipo<br>y haz clic en ellos para editar</div>
@@ -1682,7 +1489,7 @@
         </div>
     </div>
 
-    <!-- MODAL MIS EQUIPOS -->
+    <!-- ══ MODAL MIS EQUIPOS ═════════════════════════════════════════════ -->
     <div class="editor-modal" id="savedTeamsModal">
         <div class="editor-modal-box" style="max-width:560px;">
             <div class="em-header">
@@ -1704,74 +1511,10 @@
     <script src="data/items.js"></script>
     <script src="data/natures.js"></script>
     <script src="data/abilities.js"></script>
-    <script src="data/sprites.js"></script>
+    <script src="data/sprites.js"></script> <!-- Sprites personalizados en Base64 (sin internet) -->
     <script src="data/pokemon.js"></script>
     <script src="data/trainers.js"></script>
     <script src="js/team-builder-main.js"></script>
-    <script>
-        // ── FUNCIÓN BATALLA ONLINE (del código 1) ─────────────────────────────
-        function goToOnlineBattle() {
-            if (typeof playerTeam === 'undefined' || playerTeam.length < 3) {
-                showToast('⚠️ Necesitas al menos 3 Pokémon para jugar online');
-                return;
-            }
-            const json = JSON.stringify(playerTeam);
-            try { localStorage.setItem('kantoTeam', json); sessionStorage.setItem('kantoTeam', json); } catch (e) { }
-            const level = document.getElementById('levelInput')?.value || 100;
-            window.location.href = `battle.html?mp=1&team=${encodeURIComponent(json)}&level=${level}`;
-        }
-
-        // ── SISTEMA DE TEMAS (sincronizado con index.html y battle.html) ───────
-        const THEMES = {
-            default: {
-                bg: '#0a0a1a', 'bg-darker': '#060612', panel: '#0f172a',
-                border: '#1e293b', 'border-light': '#334155', gold: '#fbbf24',
-                'accent-dark': '#1e1b4b', input: '#111827', 'text-muted': '#475569',
-                'text-light': '#cbd5e1', 'text-lighter': '#9ca3af', text: '#e2e8f0', 'text-dark': '#1a1a2e'
-            },
-            etherdiel: {
-                bg: '#f0f0f0', 'bg-darker': '#e0e7ff', panel: '#e3f2fd',
-                border: '#1e88e5', 'border-light': '#1565c0', gold: '#1e88e5',
-                'accent-dark': '#0d47a1', input: '#bbdefb', 'text-muted': '#1565c0',
-                'text-light': '#0d47a1', 'text-lighter': '#1976d2', text: '#000000', 'text-dark': '#000000'
-            },
-            helodian: {
-                bg: '#0a0000', 'bg-darker': '#1a0a0a', panel: '#2a0a0a',
-                border: '#c62828', 'border-light': '#b71c1c', gold: '#e53935',
-                'accent-dark': '#7f0000', input: '#4a0a0a', 'text-muted': '#ff5252',
-                'text-light': '#ff6e40', 'text-lighter': '#ff7043', text: '#e2e8f0', 'text-dark': '#1a1a2e'
-            }
-        };
-
-        function applyTheme(name) {
-            const t = THEMES[name] || THEMES.default;
-            const r = document.documentElement;
-            r.style.setProperty('--theme-bg', t.bg);
-            r.style.setProperty('--theme-bg-darker', t['bg-darker']);
-            r.style.setProperty('--theme-panel', t.panel);
-            r.style.setProperty('--theme-border', t.border);
-            r.style.setProperty('--theme-border-light', t['border-light']);
-            r.style.setProperty('--theme-gold', t.gold);
-            r.style.setProperty('--theme-accent-dark', t['accent-dark']);
-            r.style.setProperty('--theme-input', t.input);
-            r.style.setProperty('--theme-text-muted', t['text-muted']);
-            r.style.setProperty('--theme-text-light', t['text-light']);
-            r.style.setProperty('--theme-text-lighter', t['text-lighter']);
-            r.style.setProperty('--theme-text', t.text);
-            r.style.setProperty('--theme-text-dark', t['text-dark']);
-            document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
-            const btn = document.getElementById('tb-theme-' + name);
-            if (btn) btn.classList.add('active');
-        }
-
-        function setTheme(name) {
-            localStorage.setItem('legendaryTheme', name);
-            applyTheme(name);
-        }
-
-        // Cargar tema guardado al iniciar
-        applyTheme(localStorage.getItem('legendaryTheme') || 'default');
-    </script>
 </body>
 
 </html>
