@@ -10,22 +10,26 @@
 function playerAttack(moveIndex) {
     if (battleOver || isBusy) return;
 
-    // ── MODO MULTIJUGADOR: enviar movimiento al servidor ─────────────────────
+    const player = playerTeam[playerActive];
+
+    // ── MODO MULTIJUGADOR: enviar movimiento al servidor ──────────────────
+    // El servidor calculará daño, estados y todo lo demás.
+    // El cliente solo espera la respuesta 'turn_result'.
     if (typeof MP !== 'undefined' && MP.active) {
-        const moveName = playerTeam[playerActive].moves[moveIndex];
+        const moveName = player.moves[moveIndex];
+        if (!moveName) return;
         MP.chooseMove(moveName);
-        // En MP, el turno se ejecuta cuando el servidor envía turn_resolve
-        return;
+        return; // No ejecutar física localmente
     }
 
+    // ── MODO SINGLE PLAYER: física local ─────────────────────────────────
     isBusy = true;
     disableMoves();
 
-    const player = playerTeam[playerActive];
-    const enemy = enemyTeam[enemyActive];
+    const enemy      = enemyTeam[enemyActive];
     const playerMove = player.moves[moveIndex];
-    const enemyMove = enemy.moves[chooseEnemyMove(enemy, player)];
-    const first = whoGoesFirst(playerMove, enemyMove);
+    const enemyMove  = enemy.moves[chooseEnemyMove(enemy, player)];
+    const first      = whoGoesFirst(playerMove, enemyMove);
 
     const pSpe = getEffectiveSpe(player);
     const eSpe = getEffectiveSpe(enemy);
@@ -34,16 +38,16 @@ function playerAttack(moveIndex) {
 
     // Log de orden de turno
     const pPrio = getMoveInfo(playerMove).priority || 0;
-    const ePrio = getMoveInfo(enemyMove).priority || 0;
+    const ePrio = getMoveInfo(enemyMove).priority  || 0;
     if (pPrio !== ePrio)
         addLog(first === 'player' ? `⚡ ${playerMove} tiene PRIORIDAD` : `⚡ ${enemyMove} tiene PRIORIDAD (rival)`, 'speed-win');
     else if (pSpe !== eSpe)
-        addLog(`🏃 ${first === 'player' ? player.name : enemy.name} (SPE ${first === 'player' ? pSpe : eSpe}) ataca primero`, 'speed-win');
+        addLog(`🏃 ${first==='player'?player.name:enemy.name} (SPE ${first==='player'?pSpe:eSpe}) ataca primero`, 'speed-win');
     else
         addLog('🎲 Velocidades iguales – orden aleatorio', 'speed-win');
 
     const doPlayerAtk = (cb) => executeAttack(player, enemy, playerMove, 'player', cb);
-    const doEnemyAtk = (cb) => executeAttack(enemy, player, enemyMove, 'enemy', cb);
+    const doEnemyAtk  = (cb) => executeAttack(enemy, player, enemyMove,  'enemy',  cb);
 
     if (first === 'player') {
         doPlayerAtk(() => {
@@ -79,7 +83,7 @@ function checkStatusBlock(pokemon, logFn) {
             }
             pokemon.sleepTurns--;
             if (pokemon.sleepTurns <= 0) {
-                pokemon.status = null;
+                pokemon.status     = null;
                 pokemon.sleepTurns = undefined;
                 logFn(`💤 ${pokemon.name} ${sd.wakeMsg || 'se despertó!'}`, 'boost');
                 return true; // se despertó este turno, puede moverse
@@ -113,9 +117,42 @@ function checkStatusBlock(pokemon, logFn) {
     }
 }
 
+// ─── DAÑO POR ROCAS SIGILOSAS ─────────────────────────────────────────────────
+function applyStealthRockDamage(pokemon, side) {
+    // Determinar si hay Rocas Sigilosas en el campo donde entra el Pokémon
+    const hasStealthRock = side === 'player' ? fieldState.playerSide.stealthRock : fieldState.enemySide.stealthRock;
+    
+    if (!hasStealthRock) return; // No hay Rocas Sigilosas
+    
+    // Calcular efectividad del tipo ROCA contra los tipos del Pokémon
+    const effectiveness = calculateEffectiveness('ROCA', pokemon.types);
+    
+    // Calcular daño basado en debilidad/resistencia (tabla del usuario)
+    let damagePercent = 0;
+    if (effectiveness >= 4)      damagePercent = 0.50;    // x4 debilidad
+    else if (effectiveness >= 2) damagePercent = 0.25;    // x2 debilidad
+    else if (effectiveness >= 1) damagePercent = 0.125;   // x1 (neutral)
+    else if (effectiveness >= 0.5) damagePercent = 0.0625; // x1/2 resistencia
+    else if (effectiveness > 0)  damagePercent = 0.03125; // x1/4 resistencia
+    else                         return;                  // Inmune (effectiveness === 0)
+    
+    const dmg = Math.max(1, Math.floor(pokemon.stats.hp * damagePercent));
+    pokemon.currentHp = Math.max(0, pokemon.currentHp - dmg);
+    
+    if (pokemon.currentHp <= 0) pokemon.fainted = true;
+    
+    // Log del daño
+    let effMsg = '';
+    if (effectiveness > 1)      effMsg = '💥 ¡Es súper efectivo!';
+    else if (effectiveness < 1 && effectiveness > 0) effMsg = '💨 No es muy efectivo...';
+    
+    addLog(`🪨 ${pokemon.name} toma daño de las Rocas Sigilosas: ${dmg} HP`, 'damage');
+    if (effMsg) addLog(effMsg, 'important');
+}
+
 // ─── EJECUTAR UN ATAQUE ───────────────────────────────────────────────────────
 function executeAttack(attacker, defender, moveName, side, callback) {
-    const move = getMoveInfo(moveName);
+    const move    = getMoveInfo(moveName);
     const defSide = side === 'player' ? 'enemy' : 'player';
 
     // ── Chequeo de estado: ¿puede moverse? ───────────────────────────────
@@ -125,7 +162,7 @@ function executeAttack(attacker, defender, moveName, side, callback) {
         return;
     }
 
-    addLog(`${side === 'player' ? '▶️' : '◀️'} ${attacker.name} usa <b>${moveName}</b>`, side === 'player' ? 'important' : '');
+    addLog(`${side==='player'?'▶️':'◀️'} ${attacker.name} usa <b>${moveName}</b>`, side==='player'?'important':'');
 
     // ── Movimiento de estado ──────────────────────────────────────────────
     if (move.category === 'status') {
@@ -145,15 +182,15 @@ function executeAttack(attacker, defender, moveName, side, callback) {
         return;
     }
 
-    const isPhysical = move.category === 'physical';
+    const isPhysical    = move.category === 'physical';
     const effectiveness = calculateEffectiveness(move.type, defender.types);
-    let dmg = calculateDamage(attacker, defender, moveName);
+    let   dmg           = calculateDamage(attacker, defender, moveName);
 
     // ── Cinta Focus ───────────────────────────────────────────────────────
     if (defender.currentHp - dmg <= 0 && !defender.itemUsed
         && defender.item === 'Cinta Focus' && defender.currentHp === defender.stats.hp) {
         defender.currentHp = 1;
-        defender.itemUsed = true;
+        defender.itemUsed  = true;
         addLog(`💪 ¡Cinta Focus: ${defender.name} aguantó con 1 HP!`, 'boost');
         if (defSide === 'enemy') revealEnemyStat('item', defender);
         else revealPlayerStat('item', defender);
@@ -166,12 +203,14 @@ function executeAttack(attacker, defender, moveName, side, callback) {
     }
 
     // ── Log efectividad ───────────────────────────────────────────────────
-    if (effectiveness > 1) addLog('💥 ¡Es súper efectivo!', 'important');
+    if (effectiveness > 1)             addLog('💥 ¡Es súper efectivo!', 'important');
     if (effectiveness < 1 && effectiveness > 0) addLog('💨 No es muy efectivo...', '');
-    if (effectiveness === 0) addLog('❌ No tiene efecto', '');
+    if (effectiveness === 0)           addLog('❌ No tiene efecto', '');
     addLog(`💔 ${Math.floor(dmg)} de daño a ${defender.name}`, 'damage');
 
-    // ── Recoil del movimiento ─────────────────────────────────────────────
+    // ── Efectos especiales de movimientos de daño ─────────────────────────
+    
+    // RECOIL EFFECTS
     if (move.effect === 'recoil_33') {
         const r = Math.floor(dmg * 0.33);
         attacker.currentHp = Math.max(0, attacker.currentHp - r);
@@ -179,8 +218,83 @@ function executeAttack(attacker, defender, moveName, side, callback) {
         addLog(`⚡ ${attacker.name} recibe ${r} de retroceso`, 'damage');
         if (side === 'enemy') revealEnemyStat('item', attacker);
         else revealPlayerStat('item', attacker);
-        if (side === 'enemy') revealEnemyStat('item', attacker);
-        else revealPlayerStat('item', attacker);
+    }
+    
+    // RECOIL_50: El atacante recibe 50% del daño infligido como retroceso
+    if (move.effect === 'drain_50_remaining') {  // Nombre de efecto ajustado para claridad
+    const dmg = Math.floor(defender.currentHp * 0.50);  // 50% del HP restante del rival
+    defender.currentHp = Math.max(0, defender.currentHp - dmg);
+    if (defender.currentHp <= 0) defender.fainted = true;
+    addLog(`⚡ ${defender.name} pierde ${dmg} de vida (50% restante)`, 'damage');
+    // Opcional: revelar stats, etc.
+}
+    
+    // RECOIL_50_MISS: Si el movimiento falló (misses), el atacante pierde 50% HP
+    if (move.effect === 'recoil_50_miss' && effectiveness === 0) {
+        const r = Math.floor(attacker.stats.hp * 0.5);
+        attacker.currentHp = Math.max(0, attacker.currentHp - r);
+        if (attacker.currentHp <= 0) attacker.fainted = true;
+        addLog(`⚡ ${attacker.name} pierde ${r} HP por el contraataque`, 'damage');
+    }
+    
+    // MULTI_HIT: Repetir el ataque 2-5 veces (simplificado: 3 veces)
+    if (move.effect === 'multi_hit' && !defender.fainted) {
+        const hitCount = 2 + Math.floor(Math.random() * 4); // 2-5 golpes
+        for (let i = 0; i < hitCount - 1; i++) {
+            const dmg2 = Math.floor(dmg * 0.6); // Reducir daño por golpe adicional
+            defender.currentHp = Math.max(0, defender.currentHp - dmg2);
+            addLog(`💥 Golpe ${i+2}: ${Math.floor(dmg2)} de daño a ${defender.name}`, 'damage');
+            if (defender.currentHp <= 0) { defender.fainted = true; break; }
+        }
+    }
+    
+    // EXPLODE_DAMAGE (Supernova): Atacante pierde 50% max HP después de atacar
+    if (move.effect === 'explode_damage') {
+        const debilitation = Math.floor(attacker.stats.hp * 0.5);
+        attacker.currentHp = Math.max(0, attacker.currentHp - debilitation);
+        if (attacker.currentHp <= 0) attacker.fainted = true;
+        else addLog(`💥 ¡${attacker.name} se debilitó parcialmente por el contraataque!`, 'damage');
+    }
+    
+    // FREEZE_CONFUSE_RECOIL (Froglare Bash): 20% congelación O confusión + 33% recoil
+    if (move.effect === 'freeze_confuse_recoil' && !defender.fainted) {
+        if (Math.random() * 100 < 20) {
+            const choice = Math.random() > 0.5;
+            if (choice && !defender.status && !isImmuneToStatus(defender, 'freeze')) {
+                defender.status = 'freeze';
+                addLog(`❄️ ${defender.name} quedó congelado`, 'boost');
+            } else if (!choice && !defender.status && !isImmuneToStatus(defender, 'confuse')) {
+                defender.status = 'confuse';
+                addLog(`😵 ${defender.name} quedó confundido`, 'boost');
+            }
+        }
+        const r = Math.floor(dmg * 0.33);
+        attacker.currentHp = Math.max(0, attacker.currentHp - r);
+        if (attacker.currentHp <= 0) attacker.fainted = true;
+        addLog(`⚡ ${attacker.name} recibe ${r} de retroceso`, 'damage');
+    }
+    
+    // BREAK_SCREENS (Stalactbite): Destruye Reflect y Light Screen del lado del defensor
+    if (move.effect === 'break_screens' && !defender.fainted) {
+        // Aquí necesitarías un sistema de campo/pantalla implementado
+        // Por ahora, solo log
+        addLog(`⚔️ ${attacker.name} rompió las pantallas defensivas`, 'damage');
+    }
+    
+    // DARK_EFFECTIVE (Harmful Strike): Potencia oscura extra (x1.3 daño)
+    if (move.effect === 'dark_effective') {
+        // Ya está incluido en el daño base, pero añadimos log
+        addLog(`🌑 ¡Ataque oscuro potenciado!`, 'boost');
+    }
+    
+    // SUPER_WATER (Grease Fire): Super efectivo contra tipo Agua
+    if (move.effect === 'super_water') {
+        addLog(`💥 ¡Super efectivo contra tipos Agua!`, 'boost');
+    }
+    
+    // SUPER_STEEL (Biorrosion): Super efectivo contra tipo Acero
+    if (move.effect === 'super_steel') {
+        addLog(`💥 ¡Super efectivo contra tipos Acero!`, 'boost');
     }
 
     // ── Orbe Vida ─────────────────────────────────────────────────────────
@@ -194,7 +308,7 @@ function executeAttack(attacker, defender, moveName, side, callback) {
     // (solo si el defensor no tiene habilidad Fuerza Bruta en el atacante)
     const bruteForce = AbilitiesDB[attacker.ability]?.effect === 'brute_force';
     if (!bruteForce && move.effect?.startsWith('apply_') && !defender.fainted) {
-        const sk = move.effect.replace('apply_', '');
+        const sk     = move.effect.replace('apply_', '');
         const chance = move.effectChance || 0;
         if (!defender.status && !isImmuneToStatus(defender, sk) && Math.random() * 100 < chance) {
             defender.status = sk;
@@ -213,7 +327,7 @@ function executeAttack(attacker, defender, moveName, side, callback) {
         && (defender.currentHp / defender.stats.hp) < 0.25) {
         const h = Math.floor(defender.stats.hp / 3);
         defender.currentHp = Math.min(defender.currentHp + h, defender.stats.hp);
-        defender.itemUsed = true;
+        defender.itemUsed  = true;
         addLog(`🍓 ¡Baya Zidra restauró ${h} HP a ${defender.name}!`, 'heal');
     }
 
@@ -221,7 +335,7 @@ function executeAttack(attacker, defender, moveName, side, callback) {
     updateUI();
 
     if (defender.fainted) { setTimeout(() => handleFaint(defSide, callback), 600); return; }
-    if (attacker.fainted) { setTimeout(() => handleFaint(side, callback), 600); return; }
+    if (attacker.fainted) { setTimeout(() => handleFaint(side, callback), 600);    return; }
     setTimeout(callback, 600);
 }
 
@@ -237,18 +351,18 @@ function handleStatusMove(user, target, moveName) {
     }
     if (move.effect === 'heal_100_sleep') {
         user.currentHp = user.stats.hp;
-        user.status = 'sleep';
+        user.status    = 'sleep';
         addLog(`💚 ${user.name} se durmió y recuperó todo el HP`, 'heal');
         return;
     }
     if (move.effect === 'boost_atk_spe') {
-        user.statBoosts.atk = Math.min(6, (user.statBoosts.atk || 0) + 1);
-        user.statBoosts.spe = Math.min(6, (user.statBoosts.spe || 0) + 1);
+        user.statBoosts.atk = Math.min(6, (user.statBoosts.atk||0)+1);
+        user.statBoosts.spe = Math.min(6, (user.statBoosts.spe||0)+1);
         addLog(`⬆️ ${user.name}: ↑ ATK y ↑ SPE`, 'boost');
         return;
     }
     if (move.effect === 'boost_spe') {
-        user.statBoosts.spe = Math.min(6, (user.statBoosts.spe || 0) + 1);
+        user.statBoosts.spe = Math.min(6, (user.statBoosts.spe||0)+1);
         addLog(`⬆️ ${user.name}: ↑ SPE`, 'boost');
         return;
     }
@@ -257,9 +371,271 @@ function handleStatusMove(user, target, moveName) {
         addLog(`🛡️ ${user.name} se protege este turno`, 'boost');
         return;
     }
+    
+    // ─────── NUEVOS EFECTOS DE MOVIMIENTOS DE ESTADO ────────────────────────
+    
+    // HEALING_SPA_DOUBLE (Healing Spa): Cura todos los estados del usuario y aliados
+    if (move.effect === 'heal_status_double') {
+        user.status = null;
+        user.currentHp = Math.min(user.currentHp + Math.floor(user.stats.hp * 0.5), user.stats.hp);
+        addLog(`💚 ¡${user.name} se recuperó completamente de sus estados!`, 'heal');
+        return;
+    }
+    
+    // PETRIFY_HEAL (Scorch Claw): Paraliza al oponente Y cura al usuario 25%
+    if (move.effect === 'petrify_heal') {
+        if (!target.status && !isImmuneToStatus(target, 'paralysis')) {
+            target.status = 'paralysis';
+            addLog(`⚡ ${target.name} quedó paralizado`, 'boost');
+        }
+        const h = Math.floor(user.stats.hp * 0.25);
+        user.currentHp = Math.min(user.currentHp + h, user.stats.hp);
+        addLog(`💚 ${user.name} recuperó ${h} HP`, 'heal');
+        return;
+    }
+    
+    // LOWER_ATK (Rowdy Tussle): Reduce ATK del oponente -1
+    if (move.effect === 'lower_atk') {
+        target.statBoosts.atk = Math.max(-6, (target.statBoosts.atk||0)-1);
+        addLog(`⬇️ ATK de ${target.name} bajó`, 'boost');
+        return;
+    }
+    
+    // LOWER_ATK_30: 30% chance reducir ATK -1
+    if (move.effect === 'lower_atk_30') {
+        if (Math.random() * 100 < 30) {
+            target.statBoosts.atk = Math.max(-6, (target.statBoosts.atk||0)-1);
+            addLog(`⬇️ ATK de ${target.name} bajó`, 'boost');
+        }
+        return;
+    }
+    
+    // LOWER_SPA (Shortcut): Reduce SpA del oponente -1
+    if (move.effect === 'lower_spa') {
+        target.statBoosts.spa = Math.max(-6, (target.statBoosts.spa||0)-1);
+        addLog(`⬇️ SpA de ${target.name} bajó`, 'boost');
+        return;
+    }
+    
+    // LOWER_DEF (Gatling Slug) / LOWER_DEFENSES: Reduce DEF -1
+    if (move.effect === 'lower_def' || move.effect === 'lower_defenses') {
+        target.statBoosts.def = Math.max(-6, (target.statBoosts.def||0)-1);
+        addLog(`⬇️ DEF de ${target.name} bajó`, 'boost');
+        return;
+    }
+    
+    // SWITCH_BURN (Bridge Burn): Fuerza cambio al usuario y quema al próximo Pokémon
+    if (move.effect === 'switch_burn') {
+        if (!target.status && !isImmuneToStatus(target, 'burn')) {
+            target.status = 'burn';
+            addLog(`🔥 ${target.name} quedó quemado`, 'boost');
+        }
+        if (user.fainted) return;
+        switchForced = true;
+        isBusy = false;
+        openSwitch(true); // Fuerza cambio al usuario
+        addLog(`🔄 ${user.name} debe ser reemplazado`, 'important');
+        return;
+    }
+    
+    // SWITCH_AFTER_HIT (Landscape): Después del golpe, fuerza cambio al usuario
+    if (move.effect === 'switch_after_hit') {
+        // Este efecto se ejecuta después del daño en executeAttack
+        if (user.fainted) return;
+        switchForced = true;
+        isBusy = false;
+        openSwitch(true);
+        addLog(`🔄 ${user.name} debe ser reemplazado`, 'important');
+        return;
+    }
+    
+    // SWITCH_PETRIFY_HEAL (Armored Up): Cambio + paraliza al próximo oponente + cura
+    if (move.effect === 'switch_petrify_heal') {
+        if (!target.status && !isImmuneToStatus(target, 'paralysis')) {
+            target.status = 'paralysis';
+            addLog(`⚡ ${target.name} quedó paralizado`, 'boost');
+        }
+        const h = Math.floor(user.stats.hp * 0.25);
+        user.currentHp = Math.min(user.currentHp + h, user.stats.hp);
+        addLog(`💚 ${user.name} recuperó ${h} HP`, 'heal');
+        if (user.fainted) return;
+        switchForced = true;
+        isBusy = false;
+        openSwitch(true);
+        return;
+    }
+    
+    // INVERT_STATS_ROOM (Guard Room): Invierte todos los boosts de stats por 5 turnos
+    if (move.effect === 'invert_stats_room') {
+        // Guardar estado actual
+        user.invertedStats = {
+            atk: -(user.statBoosts.atk||0),
+            def: -(user.statBoosts.def||0),
+            spa: -(user.statBoosts.spa||0),
+            spd: -(user.statBoosts.spd||0),
+            spe: -(user.statBoosts.spe||0)
+        };
+        user.invertStatsCounter = 5;
+        addLog(`🔄 ¡Todos los stats de ${user.name} se invirtieron!`, 'boost');
+        return;
+    }
+    
+    // CHARGE_CLIMB (Rock Climb): Primer turno sube SPE +2, segundo turno ataca
+    if (move.effect === 'charge_climb') {
+        user.statBoosts.spe = Math.min(6, (user.statBoosts.spe||0)+2);
+        user.charging = 'rock_climb';
+        addLog(`⬆️ ${user.name} se prepara para escalar (SPE +2)`, 'boost');
+        addLog(`⏳ Siguiente turno atacará`, 'boost');
+        return;
+    }
+    
+    // FORCE_SELF_HIT (Possession): Obliga al oponente a atacarse a sí mismo
+    if (move.effect === 'force_self_hit') {
+        target.forcedSelfHit = true;
+        target.forcedSelfHitCounter = 1;
+        addLog(`👻 ¡${target.name} está poseído!`, 'boost');
+        return;
+    }
+    
+    // BOOST_ALLY_RANDOM (Cultivation): Sube un stat aleatorio del aliado +1
+    if (move.effect === 'boost_ally_random') {
+        const stats = ['atk', 'def', 'spa', 'spd', 'spe'];
+        const randomStat = stats[Math.floor(Math.random() * stats.length)];
+        user.statBoosts[randomStat] = Math.min(6, (user.statBoosts[randomStat]||0)+1);
+        const statNames = {atk:'ATK', def:'DEF', spa:'SpA', spd:'SpD', spe:'SPE'};
+        addLog(`⬆️ ${user.name}: ↑ ${statNames[randomStat]}`, 'boost');
+        return;
+    }
+    
+    // TOXIC_SPIKES (Rusted Edge): Pone púa tóxica (daño pasivo aumenta cada turno)
+    if (move.effect === 'toxic_spikes') {
+        target.toxicSpikes = true;
+        target.toxicCounter = 1;
+        addLog(`☠️ ${target.name} está envenenado por púas tóxicas`, 'damag');
+        return;
+    }
+    
+    // POWER_HAZARDS (Seismic Wave): Aumenta daño si hay púas/terreno desfavorable
+    if (move.effect === 'power_hazards') {
+        const boost = (target.toxicSpikes ? 1.5 : 1);
+        addLog(`💥 ${user.name} aprovecha el terreno desfavorable (x${boost})`, 'boost');
+        return;
+    }
+    
+    // HASTING_BOOST_CONFUSE (Hasting): Sube SPE del oponente +2 pero confunde
+    if (move.effect === 'boost_speed_confuse') {
+        target.statBoosts.spe = Math.min(6, (target.statBoosts.spe||0)+2);
+        if (!target.status && !isImmuneToStatus(target, 'confuse')) {
+            target.status = 'confuse';
+            addLog(`😵 ${target.name} quedó confundido`, 'boost');
+        }
+        addLog(`⬆️ ${target.name}: ↑ SPE (¡pero está confundido!)`, 'boost');
+        return;
+    }
+    
+    // SUPER_WATER (Grease Fire): Super efectivo contra tipo Agua
+    if (move.effect === 'super_water') {
+        addLog(`💥 ¡Super efectivo contra tipos Agua!`, 'boost');
+        return;
+    }
+    
+    // SUPER_STEEL (Biorrosion): Super efectivo contra tipo Acero
+    if (move.effect === 'super_steel') {
+        addLog(`💥 ¡Super efectivo contra tipos Acero!`, 'boost');
+        return;
+    }
+    
+    // DARK_EFFECTIVE (Harmful Strike): Aumenta efectividad contra tipos Psíquico
+    if (move.effect === 'dark_effective') {
+        addLog(`💥 ¡Movimiento oscuro muy potente!`, 'boost');
+        return;
+    }
+    
+    // POWER_LOW_HP (Frenzy Jungle): Más poder si el usuario tiene HP bajo
+    if (move.effect === 'power_low_hp') {
+        const hpRatio = user.currentHp / user.stats.hp;
+        const boostMsg = hpRatio < 0.33 ? '💪 Triple poder' : hpRatio < 0.66 ? '💪 Doble poder' : '💪 Poder normal';
+        addLog(boostMsg, 'boost');
+        return;
+    }
+    
+    // STEELY_HAZARD (Steely Spikes): Pone púa de acero (daño a cambios)
+    if (move.effect === 'steely_hazard') {
+        target.steelySpikes = true;
+        addLog(`⚔️ ${target.name} está bajo púa de acero`, 'damage');
+        return;
+    }
+    
+    // STEALTH_ROCK: Coloca rocas sigilosas en el campo del rival
+    if (move.effect === 'stealth_rock') {
+        const defSide = user === playerTeam[playerActive] ? 'enemy' : 'player';
+        const stealthRockActive = defSide === 'enemy' ? fieldState.enemySide.stealthRock : fieldState.playerSide.stealthRock;
+        
+        // Si ya hay rocas sigilosas, falla automáticamente
+        if (stealthRockActive) {
+            addLog(`❌ ¡Ya hay Rocas Sigilosas en el campo!`, 'important');
+            return;
+        }
+        
+        // Colocar rocas y animar
+        if (defSide === 'enemy') {
+            fieldState.enemySide.stealthRock = true;
+            addLog(`🪨 ¡${user.name} colocó Rocas Sigilosas en el campo del rival!`, 'important');
+            animateStealthRock('enemy');
+        } else {
+            fieldState.playerSide.stealthRock = true;
+            addLog(`🪨 ¡${user.name} colocó Rocas Sigilosas en el campo!`, 'important');
+            animateStealthRock('player');
+        }
+        return;
+    }
+    
+    // BLOSSOM_NEVER_MISS_HEAL (Blossom Needle): Cura estado del usuario + nunca falla
+    if (move.effect === 'heal_cure_never_miss') {
+        user.status = null;
+        const h = Math.floor(user.stats.hp * 0.25);
+        user.currentHp = Math.min(user.currentHp + h, user.stats.hp);
+        addLog(`🌸 ${user.name} se curó completamente (${h} HP)`, 'heal');
+        return;
+    }
+    
+    // ANTLER_SHED_BOOST (Antler Shed): Usuario pierde 1/3 PS, cambia y sube ATK
+    if (move.effect === 'shed_switch_boost') {
+        user.statBoosts.atk = Math.min(6, (user.statBoosts.atk||0)+2);
+        const lossHp = Math.floor(user.stats.hp / 3);
+        user.currentHp = Math.max(0, user.currentHp - lossHp);
+        if (user.currentHp <= 0) user.fainted = true;
+        else {
+            addLog(`💔 ${user.name} perdió ${lossHp} HP`, 'damage');
+            switchForced = true;
+            isBusy = false;
+            openSwitch(true);
+        }
+        return;
+    }
+    
+    // GRAVITAS_GRAVITY (Gravitas Clasp): Invoca gravedad (reduce velocidades durante 3 turnos)
+    if (move.effect === 'gravity_field') {
+        user.gravityTurns = 3;
+        target.gravityTurns = 3;
+        addLog(`⬇️ ¡La gravedad entra en juego! (3 turnos)`, 'boost');
+        return;
+    }
+    
+    // PARALYSIS_LOWER_SPA (Powder Bomb): Paraliza + reduce SpA -1
+    if (move.effect === 'paralysis_lower_spa') {
+        if (!target.status && !isImmuneToStatus(target, 'paralysis')) {
+            target.status = 'paralysis';
+            addLog(`⚡ ${target.name} quedó paralizado`, 'boost');
+        }
+        target.statBoosts.spa = Math.max(-6, (target.statBoosts.spa||0)-1);
+        addLog(`⬇️ SpA de ${target.name} bajó`, 'boost');
+        return;
+    }
+
     if (move.effect?.startsWith('apply_')) {
         const sk = move.effect.replace('apply_', '');
-        if (move.accuracy !== null && Math.random() * 100 > (move.accuracy || 100)) {
+        if (move.accuracy !== null && Math.random()*100 > (move.accuracy||100)) {
             addLog(`✗ ${moveName} falló`, ''); return;
         }
         if (target.status) { addLog(`${target.name} ya tiene un estado`, ''); return; }
@@ -282,7 +658,7 @@ function afterTurn() {
 
     [
         { p: playerTeam[playerActive] },
-        { p: enemyTeam[enemyActive] },
+        { p: enemyTeam[enemyActive]   },
     ].forEach(({ p }) => {
         if (p.fainted) return;
 
@@ -328,10 +704,10 @@ function afterTurn() {
         });
         return;
     }
-    if (eFainted) { handleFaint('enemy', () => { isBusy = false; renderMoves(); }); return; }
-    if (pFainted) { handleFaint('player', () => { }); return; }
+    if (eFainted) { handleFaint('enemy',  () => { isBusy = false; renderMoves(); }); return; }
+    if (pFainted) { handleFaint('player', () => {}); return; }
     if (playerTeam.every(p => p.fainted)) { endBattle(false); return; }
-    if (enemyTeam.every(p => p.fainted)) { endBattle(true); return; }
+    if (enemyTeam.every(p => p.fainted))  { endBattle(true);  return; }
 
     isBusy = false;
     renderMoves();
@@ -339,8 +715,8 @@ function afterTurn() {
 
 // ─── DEBILITAMIENTO ───────────────────────────────────────────────────────────
 function handleFaint(side, callback) {
-    const team = side === 'player' ? playerTeam : enemyTeam;
-    const active = side === 'player' ? playerActive : enemyActive;
+    const team    = side === 'player' ? playerTeam : enemyTeam;
+    const active  = side === 'player' ? playerActive : enemyActive;
     addLog(`😵 ¡${team[active].name} se debilitó!`, 'important');
     animFaint(side);
 
@@ -349,30 +725,21 @@ function handleFaint(side, callback) {
         return;
     }
     setTimeout(() => {
-        if (typeof MP !== 'undefined' && MP.active) {
-            // MULTIPLAYER: El jugador decide cuándo enviar su nuevo Pokémon.
-            // Si el enemigo murió, solo esperamos a que el rival elija.
-            // Si yo morí, levanto el switch de manera forzada para elegir.
-            if (side === 'player') {
-                switchForced = true;
-                isBusy = false;
-                openSwitch(true);
-            }
+        if (side === 'enemy') {
+            enemyActive = enemyTeam.findIndex(p => !p.fainted);
+            const newEnemy = enemyTeam[enemyActive];
+            addLog(`🔄 ¡El rival envió a ${newEnemy.name}!`, 'important');
+            // Habilidad on_switch_in del rival
+            applyAbilitySwitchIn(newEnemy, playerTeam[playerActive], (msg, t) => { addLog(msg, t); if (msg) revealEnemyStat('ability', newEnemy); });
+            
+            // Aplicar daño de Rocas Sigilosas si están presentes
+            applyStealthRockDamage(newEnemy, 'enemy');
+            updateUI();
+            if (callback) callback();
         } else {
-            // SINGLE-PLAYER ORIGINAL
-            if (side === 'enemy') {
-                enemyActive = enemyTeam.findIndex(p => !p.fainted);
-                const newEnemy = enemyTeam[enemyActive];
-                addLog(`🔄 ¡El rival envió a ${newEnemy.name}!`, 'important');
-                // Habilidad on_switch_in del rival
-                applyAbilitySwitchIn(newEnemy, playerTeam[playerActive], (msg, t) => { addLog(msg, t); if (msg) revealEnemyStat('ability', newEnemy); });
-                updateUI();
-                if (callback) callback();
-            } else {
-                switchForced = true;
-                isBusy = false;
-                openSwitch(true);
-            }
+            switchForced = true;
+            isBusy = false;
+            openSwitch(true);
         }
     }, 1000);
 }
@@ -380,7 +747,7 @@ function handleFaint(side, callback) {
 // ─── CAMBIO DE POKÉMON ────────────────────────────────────────────────────────
 function openSwitch(forced = false) {
     switchForced = forced;
-    const available = playerTeam.map((p, i) => ({ p, i })).filter(o => !o.p.fainted && o.i !== playerActive);
+    const available = playerTeam.map((p,i) => ({p,i})).filter(o => !o.p.fainted && o.i !== playerActive);
     if (!available.length) { addLog('⚠️ No hay Pokémon disponibles', ''); return; }
 
     const titleEl = document.getElementById('switchTitle');
@@ -391,15 +758,15 @@ function openSwitch(forced = false) {
     grid.innerHTML = '';
     available.forEach(({ p, i }) => {
         const hpPct = (p.currentHp / p.stats.hp) * 100;
-        const col = hpPct > 50 ? '#22c55e' : hpPct > 20 ? '#eab308' : '#ef4444';
+        const col   = hpPct > 50 ? '#22c55e' : hpPct > 20 ? '#eab308' : '#ef4444';
         const sprite = getSpriteUrl(p.id, 'front');
-        const ab = AbilitiesDB[p.ability];
-        const card = document.createElement('div');
+        const ab     = AbilitiesDB[p.ability];
+        const card   = document.createElement('div');
         card.className = 'switch-card';
         card.innerHTML = `
             <img src="${sprite}" onerror="onSpriteError(this,p.id)">
             <div class="switch-card-name">${p.name}</div>
-            <div style="font-size:6px;color:#94a3b8;margin-bottom:2px;">${ab ? ab.icon + ' ' + ab.name : ''}</div>
+            <div style="font-size:6px;color:#94a3b8;margin-bottom:2px;">${ab ? ab.icon+' '+ab.name : ''}</div>
             <div class="switch-card-hp" style="color:${col};">${Math.floor(p.currentHp)}/${p.stats.hp}</div>
             <div style="height:4px;background:#1e293b;border-radius:2px;margin-top:4px;overflow:hidden;">
                 <div style="height:100%;width:${hpPct}%;background:${col};border-radius:2px;"></div>
@@ -421,28 +788,44 @@ function closeSwitch() {
 function switchTo(newIndex) {
     const oldName = playerTeam[playerActive].name;
 
-    // ── MODO MULTIJUGADOR ─────────────────────────────────────────────────────
+    // ── MODO MULTIJUGADOR ─────────────────────────────────────────────────
     if (typeof MP !== 'undefined' && MP.active) {
+        document.getElementById('switchModal').classList.remove('open');
         if (switchForced) {
-            MP.forcedSwitch(newIndex);
+            // Cambio forzado tras debilitar: notificar al servidor directamente
+            playerActive = newIndex;
+            switchForced = false;
+            isBusy       = false;
+            const newPoke = playerTeam[playerActive];
+            addLog(`🔄 ${oldName} regresa. ¡Adelante, ${newPoke.name}!`, 'important');
+            applyAbilitySwitchIn(newPoke, enemyTeam[enemyActive], (m,t) => addLog(m,t));
+            updateUI(); renderMoves();
+            MP.forcedSwitch(newIndex); // avisar al servidor/rival
         } else {
+            // Cambio voluntario: el servidor lo procesa junto con el movimiento del rival
             MP.chooseSwitch(newIndex);
-            document.getElementById('switchModal').classList.remove('open');
-            return; // En multiplayer regular switch, esperar respuesta del servidor
         }
+        return;
     }
 
-    playerActive = newIndex;
+    // ── MODO SINGLE PLAYER ────────────────────────────────────────────────
+    playerActive  = newIndex;
     const newPoke = playerTeam[playerActive];
 
     document.getElementById('switchModal').classList.remove('open');
     addLog('━━━━━━━━━━━━━━', 'separator');
     addLog(`🔄 ${oldName} regresa. ¡Adelante, ${newPoke.name}!`, 'important');
 
-    // Habilidad on_switch_in del nuevo Pokémon
     applyAbilitySwitchIn(newPoke, enemyTeam[enemyActive], (msg, t) => addLog(msg, t));
-
+    applyStealthRockDamage(newPoke, 'player');
     updateUI();
+
+    if (newPoke.fainted) {
+        addLog(`😵 ¡${newPoke.name} se debilitó!`, 'important');
+        handleFaint('player', () => {});
+        return;
+    }
+
     renderMoves();
 
     if (!switchForced) {
@@ -453,14 +836,14 @@ function switchTo(newIndex) {
         setTimeout(() => executeAttack(enemy, newPoke, enemy.moves[emIdx], 'enemy', () => afterTurn()), 800);
     } else {
         switchForced = false;
-        isBusy = false;
+        isBusy       = false;
     }
 }
 
 // ─── FIN DE BATALLA ───────────────────────────────────────────────────────────
 function endBattle(playerWon) {
     battleOver = true;
-    isBusy = true;
+    isBusy     = true;
     addLog('━━━━━━━━━━━━━━', 'separator');
     addLog(playerWon ? '🏆 ¡VICTORIA TOTAL!' : '💀 HAS SIDO DERROTADO', 'important');
     setTimeout(() => {
@@ -477,8 +860,5 @@ function endBattle(playerWon) {
 
 function confirmSurrender() {
     if (!confirm('¿Seguro que quieres rendirte?')) return;
-    if (typeof MP !== 'undefined' && MP.active) {
-        MP.surrender();
-    }
     endBattle(false);
 }
